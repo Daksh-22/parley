@@ -23,6 +23,8 @@
   --color-accent: var(--p-accent);
   --color-accent-hover: var(--p-accent-hover);
   --color-accent-soft: var(--p-accent-soft);
+  --color-accent-strong: var(--p-accent-strong);
+  --color-accent-strong-hover: var(--p-accent-strong-hover);
 
   --color-danger: var(--p-danger);
   --color-success: var(--p-success);
@@ -38,10 +40,14 @@
   --p-border-strong: #3a4048;
   --p-text-primary: #e8eaed;
   --p-text-secondary: #a3a9b3;
-  --p-text-muted: #717784;
+  --p-text-muted: #8b919d;
+  /* accent: text and icons on dark surfaces. accent-strong: filled controls
+     that carry white text. Both hold AA contrast in their role. */
   --p-accent: #4f8cff;
   --p-accent-hover: #6b9fff;
   --p-accent-soft: rgba(79, 140, 255, 0.14);
+  --p-accent-strong: #2563eb;
+  --p-accent-strong-hover: #1d4ed8;
   --p-danger: #e5484d;
   --p-success: #46a758;
   color-scheme: dark;
@@ -56,10 +62,12 @@ html.light {
   --p-border-strong: #c5cad1;
   --p-text-primary: #1a1d21;
   --p-text-secondary: #4b5158;
-  --p-text-muted: #70767e;
+  --p-text-muted: #6b7178;
   --p-accent: #2563eb;
   --p-accent-hover: #1d4ed8;
   --p-accent-soft: rgba(37, 99, 235, 0.1);
+  --p-accent-strong: #2563eb;
+  --p-accent-strong-hover: #1d4ed8;
   --p-danger: #d92d20;
   --p-success: #15803d;
   color-scheme: light;

@@ -55,5 +55,16 @@ export default tseslint.config(
       'no-console': 'off',
     },
   },
+  {
+    // Operational scripts: stdout is their interface. The lighthouse script
+    // also evaluates snippets in a browser context.
+    files: ['infra/**/*.mjs', 'infra/**/*.js'],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.browser },
+    },
+    rules: {
+      'no-console': 'off',
+    },
+  },
   prettier,
 );

@@ -134,12 +134,14 @@ export function connect(currentUser: PublicUser): void {
     if (userId === me?.id) return;
     const r = room(roomId);
     if (!r) return;
-    const msg = r.messages.find((m) => m.id === messageId);
-    if (msg && msg.sender.id === me?.id && (msg.status === 'sent' || msg.status === 'sending')) {
-      msg.status = 'delivered';
-      r.messages = [...r.messages];
-      emitChange();
-    }
+    r.messages = r.messages.map((m) =>
+      m.id === messageId &&
+      m.sender.id === me?.id &&
+      (m.status === 'sent' || m.status === 'sending')
+        ? { ...m, status: 'delivered' as const }
+        : m,
+    );
+    emitChange();
   });
 
   socket.on('room:readState', ({ roomId, userId, lastReadMessageId }) => {
@@ -147,15 +149,13 @@ export function connect(currentUser: PublicUser): void {
     if (!r) return;
     r.readCursors = new Map(r.readCursors).set(userId, lastReadMessageId);
     if (userId !== me?.id) {
-      // Everything of ours at or before the cursor is now read.
-      let changed = false;
-      for (const m of r.messages) {
-        if (m.sender.id === me?.id && m.id <= lastReadMessageId && m.status !== 'read') {
-          m.status = 'read';
-          changed = true;
-        }
-      }
-      if (changed) r.messages = [...r.messages];
+      // Everything of ours at or before the cursor is now read. ObjectIds are
+      // fixed-length hex, so string comparison matches creation order.
+      r.messages = r.messages.map((m) =>
+        m.sender.id === me?.id && m.id <= lastReadMessageId && m.status !== 'read'
+          ? { ...m, status: 'read' as const }
+          : m,
+      );
     }
     emitChange();
   });
@@ -168,6 +168,9 @@ export function connect(currentUser: PublicUser): void {
     if (isTyping) typing.set(userId, Date.now() + 4000);
     else typing.delete(userId);
     r.typing = typing;
+    // Unknown typist: the roster is stale, refresh it so the indicator can
+    // show a name instead of "Someone".
+    if (isTyping && !r.members.has(userId)) void loadMembers(roomId);
     emitChange();
   });
 
@@ -260,6 +263,11 @@ function appendMessage(message: MessageWire, own: boolean): void {
     typing.delete(message.sender.id);
     r.typing = typing;
   }
+  // A message from someone not in the roster means the roster is stale
+  // (they joined after we loaded it). Fold them in.
+  if (!r.members.has(message.sender.id)) {
+    r.members = new Map(r.members).set(message.sender.id, message.sender);
+  }
   emitChange();
 }
 
@@ -300,6 +308,17 @@ export async function loadRooms(): Promise<void> {
   state.rooms = nextRooms;
   state.roomOrder = order;
   emitChange();
+
+  // Prefetch rosters for member rooms so sidebar presence dots and typing
+  // names work before a room is first opened. Capped, fire and forget.
+  let prefetched = 0;
+  for (const wire of rooms) {
+    const roomState = nextRooms.get(wire.id);
+    if (wire.isMember && roomState && roomState.members.size === 0 && prefetched < 20) {
+      prefetched += 1;
+      void loadMembers(wire.id);
+    }
+  }
 }
 
 export async function createRoom(name: string): Promise<{ ok: boolean; error?: string }> {

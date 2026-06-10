@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "parley-web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "@parley/web", "dev"],
+      "port": 5173
+    }
+  ]
+}

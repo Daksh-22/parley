@@ -1,5 +1,11 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import { z } from 'zod';
+
+// Load the package-local .env first, then the repo root .env as a fallback,
+// so "cp .env.example .env" at the repo root just works. dotenv never
+// overrides variables that are already set, so real environment wins.
+dotenv.config();
+dotenv.config({ path: '../../.env' });
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),

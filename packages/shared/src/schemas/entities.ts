@@ -16,3 +16,12 @@ export const authResponseSchema = z.object({
   user: publicUserSchema,
 });
 export type AuthResponse = z.infer<typeof authResponseSchema>;
+
+export const createRoomRequestSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Room name is required')
+    .max(48, 'Room name must be at most 48 characters'),
+});
+export type CreateRoomRequest = z.infer<typeof createRoomRequestSchema>;

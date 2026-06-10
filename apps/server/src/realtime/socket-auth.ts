@@ -1,11 +1,5 @@
-import type { Socket } from 'socket.io';
 import { verifyAccessToken } from '../auth/tokens.js';
-
-declare module 'socket.io' {
-  interface SocketData {
-    userId: string;
-  }
-}
+import type { AppSocket } from './types.js';
 
 /**
  * Handshake authentication. Rejecting here means the connection never
@@ -13,7 +7,7 @@ declare module 'socket.io' {
  * userId in socket.data. Event handlers must always read identity from
  * socket.data.userId and never from client payloads.
  */
-export function socketAuthMiddleware(socket: Socket, next: (err?: Error) => void): void {
+export function socketAuthMiddleware(socket: AppSocket, next: (err?: Error) => void): void {
   const token: unknown = socket.handshake.auth['token'];
   const userId = typeof token === 'string' ? verifyAccessToken(token) : null;
   if (!userId) {

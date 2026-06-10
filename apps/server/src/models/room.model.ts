@@ -22,4 +22,9 @@ const roomSchema = new Schema<RoomFields>(
   { timestamps: true },
 );
 
+// Room directory listing: public rooms paginated by _id.
+roomSchema.index({ isDM: 1, _id: 1 });
+// Room creation ceiling: count rooms created by a user.
+roomSchema.index({ creatorId: 1 });
+
 export const Room = model('Room', roomSchema);

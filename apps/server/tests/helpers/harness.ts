@@ -2,12 +2,12 @@ import { createServer, type Server as HttpServer } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import type { Express } from 'express';
 import mongoose from 'mongoose';
-import type { Server } from 'socket.io';
 import request from 'supertest';
 import { connectMongo, disconnectMongo } from '../../src/lib/mongo.js';
 import { connectRedis, disconnectRedis, redis } from '../../src/lib/redis.js';
 import { createApp } from '../../src/http/app.js';
 import { createIo } from '../../src/realtime/io.js';
+import { drainPresence } from '../../src/realtime/presence.js';
 import { ensureSeedRooms } from '../../src/models/seed.js';
 import { User } from '../../src/models/user.model.js';
 import { Room } from '../../src/models/room.model.js';
@@ -17,7 +17,7 @@ import { Message } from '../../src/models/message.model.js';
 export interface TestContext {
   app: Express;
   httpServer: HttpServer;
-  io: Server;
+  io: ReturnType<typeof createIo>;
   url: string;
 }
 
@@ -27,7 +27,14 @@ export async function startTestServer(): Promise<TestContext> {
   await mongoose.connection.db?.dropDatabase();
   await redis.flushdb();
   // Unique indexes must exist before duplicate-key behavior can be asserted.
-  await Promise.all([User.init(), Room.init(), Membership.init(), Message.init()]);
+  // syncIndexes (not init) because dropDatabase just destroyed whatever
+  // autoIndex built, and init() caches its first run.
+  await Promise.all([
+    User.syncIndexes(),
+    Room.syncIndexes(),
+    Membership.syncIndexes(),
+    Message.syncIndexes(),
+  ]);
   await ensureSeedRooms();
 
   const app = createApp();
@@ -42,6 +49,7 @@ export async function stopTestServer(ctx: TestContext): Promise<void> {
   await new Promise<void>((resolve, reject) => {
     ctx.io.close((err) => (err ? reject(err) : resolve()));
   });
+  await drainPresence();
   await disconnectMongo();
   await disconnectRedis();
 }

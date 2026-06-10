@@ -23,7 +23,8 @@
       "Bash(lsof -nP -iTCP:27017 -sTCP:LISTEN)",
       "Bash(pnpm --filter @parley/server test)",
       "Bash(git add *)",
-      "Bash(git commit -q -m 'feat: domain models and auth with JWT plus socket handshake verification *)"
+      "Bash(git commit -q -m 'feat: domain models and auth with JWT plus socket handshake verification *)",
+      "Bash(git commit -q -m 'feat: realtime core with receipts, presence, typing, and reconnect sync *)"
     ]
   }
 }

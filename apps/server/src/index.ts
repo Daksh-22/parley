@@ -5,6 +5,7 @@ import { connectMongo, disconnectMongo } from './lib/mongo.js';
 import { connectRedis, disconnectRedis } from './lib/redis.js';
 import { createApp } from './http/app.js';
 import { createIo } from './realtime/io.js';
+import { drainPresence } from './realtime/presence.js';
 import { ensureSeedRooms } from './models/seed.js';
 
 async function main(): Promise<void> {
@@ -38,6 +39,9 @@ async function main(): Promise<void> {
       await new Promise<void>((resolve, reject) => {
         io.close((err) => (err ? reject(err) : resolve()));
       });
+      // Socket disconnect handlers write presence state; let them land
+      // before tearing down the connections they write to.
+      await drainPresence();
       await disconnectMongo();
       await disconnectRedis();
       logger.info('shutdown complete');

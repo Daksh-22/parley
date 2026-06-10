@@ -6,6 +6,10 @@ import { env } from '../../config/env.js';
 import { HttpError, isDuplicateKeyError } from '../../lib/errors.js';
 import { parseOrThrow } from '../../lib/validate.js';
 import { User } from '../../models/user.model.js';
+import { Room } from '../../models/room.model.js';
+import { Membership } from '../../models/membership.model.js';
+import { GENERAL_SLUG } from '../../models/seed.js';
+import { logger } from '../../lib/logger.js';
 import { hashPassword, verifyPassword } from '../../auth/password.js';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../auth/tokens.js';
 import { requireAuth } from '../../auth/middleware.js';
@@ -51,6 +55,15 @@ authRouter.post('/auth/register', async (req, res) => {
       displayName: body.displayName,
       avatarSeed: randomUUID(),
     });
+    // New accounts land in #general so the app is never empty. Non-fatal:
+    // registration succeeds even if the seed room is missing.
+    try {
+      const general = await Room.findOne({ slug: GENERAL_SLUG });
+      if (general) await Membership.create({ userId: user._id, roomId: general._id });
+    } catch (err) {
+      logger.warn({ err }, 'could not auto-join #general at registration');
+    }
+
     setRefreshCookie(res, user._id.toHexString());
     res.status(201).json({
       accessToken: signAccessToken(user._id.toHexString()),

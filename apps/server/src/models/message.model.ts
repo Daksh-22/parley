@@ -25,6 +25,8 @@ const messageSchema = new Schema<MessageFields>(
 
 // Cursor pagination: newest first within a room, tie-broken by _id.
 messageSchema.index({ roomId: 1, createdAt: -1, _id: -1 });
+// Unread counts and reconnect sync: _id range scans within a room.
+messageSchema.index({ roomId: 1, _id: -1 });
 // Idempotent dedup for at-least-once sends.
 messageSchema.index({ senderId: 1, clientMsgId: 1 }, { unique: true });
 

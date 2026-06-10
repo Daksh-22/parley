@@ -9,6 +9,7 @@ import { logger } from '../lib/logger.js';
 import { HttpError } from '../lib/errors.js';
 import { healthzRouter } from './routes/healthz.js';
 import { authRouter } from './routes/auth.js';
+import { roomsRouter } from './routes/rooms.js';
 
 export function createApp(): express.Express {
   const app = express();
@@ -39,6 +40,7 @@ export function createApp(): express.Express {
 
   app.use(healthzRouter);
   app.use(authRouter);
+  app.use(roomsRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found' } });

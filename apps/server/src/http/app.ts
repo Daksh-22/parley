@@ -6,7 +6,9 @@ import cookieParser from 'cookie-parser';
 import { pinoHttp } from 'pino-http';
 import { env } from '../config/env.js';
 import { logger } from '../lib/logger.js';
+import { HttpError } from '../lib/errors.js';
 import { healthzRouter } from './routes/healthz.js';
+import { authRouter } from './routes/auth.js';
 
 export function createApp(): express.Express {
   const app = express();
@@ -36,14 +38,19 @@ export function createApp(): express.Express {
   app.use(cookieParser());
 
   app.use(healthzRouter);
+  app.use(authRouter);
 
   app.use((_req, res) => {
     res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Route not found' } });
   });
 
   const errorHandler: express.ErrorRequestHandler = (err, req, res, _next) => {
-    logger.error({ err, reqId: req.id }, 'unhandled http error');
     if (res.headersSent) return;
+    if (err instanceof HttpError) {
+      res.status(err.status).json({ error: { code: err.code, message: err.message } });
+      return;
+    }
+    logger.error({ err, reqId: req.id }, 'unhandled http error');
     res.status(500).json({ error: { code: 'INTERNAL', message: 'Internal server error' } });
   };
   app.use(errorHandler);

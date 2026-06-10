@@ -5,10 +5,12 @@ import { connectMongo, disconnectMongo } from './lib/mongo.js';
 import { connectRedis, disconnectRedis } from './lib/redis.js';
 import { createApp } from './http/app.js';
 import { createIo } from './realtime/io.js';
+import { ensureSeedRooms } from './models/seed.js';
 
 async function main(): Promise<void> {
   await connectMongo();
   await connectRedis();
+  await ensureSeedRooms();
 
   const app = createApp();
   const httpServer = createServer(app);

@@ -1,6 +1,8 @@
 import type { Server as HttpServer } from 'node:http';
 import { Server } from 'socket.io';
 import { env } from '../config/env.js';
+import { logger } from '../lib/logger.js';
+import { socketAuthMiddleware } from './socket-auth.js';
 
 export function createIo(httpServer: HttpServer): Server {
   const io = new Server(httpServer, {
@@ -13,10 +15,13 @@ export function createIo(httpServer: HttpServer): Server {
     maxHttpBufferSize: 16 * 1024,
   });
 
-  // Every connection must authenticate. The real JWT middleware replaces this
-  // in the auth module; until it is registered, nothing may connect.
-  io.use((_socket, next) => {
-    next(new Error('unauthorized'));
+  io.use(socketAuthMiddleware);
+
+  io.on('connection', (socket) => {
+    logger.debug({ socketId: socket.id, userId: socket.data.userId }, 'socket connected');
+    socket.on('disconnect', (reason) => {
+      logger.debug({ socketId: socket.id, reason }, 'socket disconnected');
+    });
   });
 
   return io;

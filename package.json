@@ -14,7 +14,8 @@
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test"
+    "test": "pnpm -r test",
+    "ai:backfill": "pnpm --filter @parley/server ai:backfill"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",

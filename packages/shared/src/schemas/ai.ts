@@ -90,6 +90,22 @@ export interface AiStreamErrorEvent {
   message: string;
 }
 
+// ---------------------------------------------------------------------------
+// Documents
+// ---------------------------------------------------------------------------
+
+export const documentWireSchema = z.object({
+  id: objectIdSchema,
+  roomId: objectIdSchema,
+  filename: z.string(),
+  size: z.number().int(),
+  status: z.enum(['processing', 'ready', 'failed']),
+  chunkCount: z.number().int(),
+  error: z.string().nullable(),
+  createdAt: z.string().datetime(),
+});
+export type DocumentWire = z.infer<typeof documentWireSchema>;
+
 // Doc ingestion status pushed to room members.
 export interface AiDocStatusEvent {
   roomId: string;

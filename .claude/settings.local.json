@@ -62,7 +62,8 @@
       "Bash(pnpm --filter @parley/server add -D @types/multer @types/pdf-parse)",
       "Bash(pnpm --filter @parley/web typecheck)",
       "Bash(pnpm --filter @parley/server typecheck)",
-      "Bash(git commit -q -m 'feat: AI foundation with provider abstraction and hermetic mock *)"
+      "Bash(git commit -q -m 'feat: AI foundation with provider abstraction and hermetic mock *)",
+      "Bash(git commit -q -m 'feat: ingestion pipeline with docs, backfill, and idempotent worker *)"
     ]
   }
 }

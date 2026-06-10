@@ -8,6 +8,8 @@ import { redisPub, redisSub } from '../lib/redis.js';
 import { Membership } from '../models/membership.model.js';
 import { socketAuthMiddleware } from './socket-auth.js';
 import { registerHandlers, MAX_ROOMS_PER_USER } from './handlers.js';
+import { registerAiHandlers } from './ai-handlers.js';
+import { setAiIo } from '../ai/events.js';
 import { presenceConnect, presenceDisconnect, listOnlineUserIds } from './presence.js';
 import { roomChannel } from './serialize.js';
 import type { AppServer } from './types.js';
@@ -34,6 +36,10 @@ export function createIo(httpServer: HttpServer, options: CreateIoOptions = {}):
   const { pub, sub } = options.redisClients ?? { pub: redisPub, sub: redisSub };
   io.adapter(createAdapter(pub, sub));
 
+  // The AI layer broadcasts through this injection seam; registering it here
+  // means every environment that creates an io server gets it for free.
+  if (env.AI_ENABLED) setAiIo(io);
+
   io.use(socketAuthMiddleware);
 
   io.on('connection', (socket) => {
@@ -44,6 +50,7 @@ export function createIo(httpServer: HttpServer, options: CreateIoOptions = {}):
     // membership gate inside each handler covers the window before the
     // channel subscriptions below complete.
     registerHandlers(io, socket);
+    if (env.AI_ENABLED) registerAiHandlers(io, socket);
 
     void (async () => {
       const memberships = await Membership.find({ userId })

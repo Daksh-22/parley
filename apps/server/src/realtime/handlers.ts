@@ -11,7 +11,9 @@ import {
 } from '@parley/shared';
 import { WsError, isDuplicateKeyError } from '../lib/errors.js';
 import { logger } from '../lib/logger.js';
+import { env } from '../config/env.js';
 import { enqueueMessageEmbed } from '../ai/ingest/queue.js';
+import { preflight, roomEmitter, startAsk } from '../ai/ask.js';
 import { Room } from '../models/room.model.js';
 import { Membership } from '../models/membership.model.js';
 import { Message, type MessageDoc } from '../models/message.model.js';
@@ -133,6 +135,33 @@ export function registerHandlers(io: AppServer, socket: AppSocket): void {
       enqueueMessageEmbed(message._id.toHexString()).catch((err: unknown) => {
         logger.warn({ err }, 'embed enqueue failed');
       });
+
+      // "@recall <question>" inside a room triggers a cited answer streamed
+      // to the whole room and persisted as an ai message.
+      if (env.AI_ENABLED && payload.body.startsWith('@recall ')) {
+        const question = payload.body.slice('@recall '.length).trim();
+        if (question.length >= 3 && question.length <= 600) {
+          preflight(userId)
+            .then(() => {
+              startAsk({
+                userId,
+                question,
+                scope: 'room',
+                roomId: payload.roomId,
+                persistToRoom: true,
+                emitter: roomEmitter(payload.roomId),
+              });
+            })
+            .catch((err: unknown) => {
+              // Quota or availability refusals go quietly to the asker only.
+              socket.emit('ai:stream:error', {
+                streamId: `preflight-${message._id.toHexString()}`,
+                code: err instanceof WsError ? err.code : 'AI_FAILED',
+                message: err instanceof WsError ? err.message : 'Recall is unavailable right now',
+              });
+            });
+        }
+      }
       return { message: wire };
     }),
   );

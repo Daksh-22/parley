@@ -30,10 +30,6 @@ async function main(): Promise<void> {
   const app = createApp();
   const httpServer = createServer(app);
   const io = createIo(httpServer);
-  if (env.AI_ENABLED) {
-    const { setAiIo } = await import('./ai/events.js');
-    setAiIo(io);
-  }
 
   httpServer.listen(env.PORT, () => {
     logger.info({ port: env.PORT, env: env.NODE_ENV }, 'parley-server listening');

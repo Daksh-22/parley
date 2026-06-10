@@ -63,7 +63,11 @@
       "Bash(pnpm --filter @parley/web typecheck)",
       "Bash(pnpm --filter @parley/server typecheck)",
       "Bash(git commit -q -m 'feat: AI foundation with provider abstraction and hermetic mock *)",
-      "Bash(git commit -q -m 'feat: ingestion pipeline with docs, backfill, and idempotent worker *)"
+      "Bash(git commit -q -m 'feat: ingestion pipeline with docs, backfill, and idempotent worker *)",
+      "Bash(python3 -)",
+      "Bash(pnpm --filter @parley/server exec vitest run tests/ai-answer.test.ts tests/ai-quota.test.ts)",
+      "Bash(pnpm --filter @parley/server exec vitest run tests/ai-answer.test.ts)",
+      "Bash(git commit -q -m 'feat: hybrid retrieval and cited streaming answers *)"
     ]
   }
 }

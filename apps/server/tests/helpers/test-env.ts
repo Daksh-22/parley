@@ -16,6 +16,15 @@ process.env['MSG_RATE_LIMIT'] ??= '10000';
 process.env['JOIN_RATE_LIMIT'] ??= '10000';
 process.env['CONN_RATE_LIMIT'] ??= '10000';
 
+// AI runs against the deterministic mock provider and a dedicated qdrant
+// collection. Individual files opt out with vi.hoisted AI_ENABLED=false.
+process.env['AI_ENABLED'] ??= 'true';
+process.env['AI_CHAT_PROVIDER'] ??= 'mock';
+process.env['AI_EMBED_PROVIDER'] ??= 'mock';
+process.env['AI_EMBED_DIMENSIONS'] ??= '256';
+process.env['QDRANT_COLLECTION'] ??= 'parley-test';
+process.env['QDRANT_URL'] ??= 'http://127.0.0.1:6333';
+
 if (!process.env['MONGO_URI'].includes('test')) {
   throw new Error('Refusing to run tests against a non-test Mongo database');
 }

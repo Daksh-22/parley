@@ -7,6 +7,13 @@ export interface MessageFields {
   // Client-generated uuid. The unique (senderId, clientMsgId) index makes
   // message sends idempotent: at-least-once delivery, exactly-once persistence.
   clientMsgId: string;
+  // 'ai' marks a persisted Recall answer. AI messages are never ingested
+  // into the vector store, which prevents feedback loops.
+  kind: 'user' | 'ai';
+  // Citations are constructed server-side and validated against the shared
+  // zod schema before persist; stored as plain subdocuments.
+  citations?: unknown[];
+  aiQuestion?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -17,11 +24,17 @@ const messageSchema = new Schema<MessageFields>(
   {
     roomId: { type: Schema.Types.ObjectId, ref: 'Room', required: true },
     senderId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    body: { type: String, required: true, trim: true, minlength: 1, maxlength: 2000 },
+    body: { type: String, required: true, trim: true, minlength: 1, maxlength: 8000 },
     clientMsgId: { type: String, required: true, maxlength: 64 },
+    kind: { type: String, enum: ['user', 'ai'], default: 'user' },
+    citations: { type: [Schema.Types.Mixed], default: undefined },
+    aiQuestion: { type: String, maxlength: 600 },
   },
   { timestamps: true },
 );
+
+// Lexical leg of hybrid retrieval.
+messageSchema.index({ body: 'text' });
 
 // Cursor pagination: newest first within a room, tie-broken by _id.
 messageSchema.index({ roomId: 1, createdAt: -1, _id: -1 });

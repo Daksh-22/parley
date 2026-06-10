@@ -13,9 +13,27 @@ async function main(): Promise<void> {
   await connectRedis();
   await ensureSeedRooms();
 
+  if (env.AI_ENABLED) {
+    // AI infrastructure failures must never block chat. If Qdrant is down at
+    // boot, AI surfaces show their unavailable state and chat runs normally.
+    try {
+      const { ensureCollection } = await import('./ai/vector-store.js');
+      await ensureCollection();
+      const { startIngestWorker } = await import('./ai/ingest/queue.js');
+      startIngestWorker();
+      logger.info('ai layer ready');
+    } catch (err) {
+      logger.error({ err }, 'ai layer failed to initialize, chat continues without it');
+    }
+  }
+
   const app = createApp();
   const httpServer = createServer(app);
   const io = createIo(httpServer);
+  if (env.AI_ENABLED) {
+    const { setAiIo } = await import('./ai/events.js');
+    setAiIo(io);
+  }
 
   httpServer.listen(env.PORT, () => {
     logger.info({ port: env.PORT, env: env.NODE_ENV }, 'parley-server listening');
@@ -42,6 +60,10 @@ async function main(): Promise<void> {
       // Socket disconnect handlers write presence state; let them land
       // before tearing down the connections they write to.
       await drainPresence();
+      if (env.AI_ENABLED) {
+        const { stopIngestWorker } = await import('./ai/ingest/queue.js');
+        await stopIngestWorker().catch(() => undefined);
+      }
       await disconnectMongo();
       await disconnectRedis();
       logger.info('shutdown complete');

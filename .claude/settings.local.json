@@ -50,7 +50,19 @@
       "Bash(git commit -q -m 'feat: full chat frontend with design system, a11y 100, verified live *)",
       "Bash(pnpm format *)",
       "Bash(pnpm build *)",
-      "Bash(git commit -q -m 'chore: update local tool permission allowlist *)"
+      "Bash(git commit -q -m 'chore: update local tool permission allowlist *)",
+      "Bash(brew info *)",
+      "Bash(env)",
+      "Bash(brew search *)",
+      "Bash(mkdir -p \"/Users/dakshjain/Downloads/ChatterUP_Project-main 2/.localdev/qdrant\")",
+      "Bash(curl -sL -o qdrant.tar.gz https://github.com/qdrant/qdrant/releases/latest/download/qdrant-aarch64-apple-darwin.tar.gz)",
+      "Bash(tar xzf *)",
+      "Bash(./qdrant --version)",
+      "Bash(pnpm --filter @parley/server add @anthropic-ai/sdk openai @qdrant/js-client-rest bullmq multer pdf-parse)",
+      "Bash(pnpm --filter @parley/server add -D @types/multer @types/pdf-parse)",
+      "Bash(pnpm --filter @parley/web typecheck)",
+      "Bash(pnpm --filter @parley/server typecheck)",
+      "Bash(git commit -q -m 'feat: AI foundation with provider abstraction and hermetic mock *)"
     ]
   }
 }

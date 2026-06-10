@@ -8,6 +8,7 @@ import { connectRedis, disconnectRedis, redis } from '../../src/lib/redis.js';
 import { createApp } from '../../src/http/app.js';
 import { createIo } from '../../src/realtime/io.js';
 import { drainPresence } from '../../src/realtime/presence.js';
+import { env } from '../../src/config/env.js';
 import { ensureSeedRooms } from '../../src/models/seed.js';
 import { User } from '../../src/models/user.model.js';
 import { Room } from '../../src/models/room.model.js';
@@ -37,6 +38,15 @@ export async function startTestServer(): Promise<TestContext> {
   ]);
   await ensureSeedRooms();
 
+  if (env.AI_ENABLED) {
+    // Fresh vector collection per test file, mirroring the database drop.
+    const { qdrant, ensureCollection } = await import('../../src/ai/vector-store.js');
+    await qdrant()
+      .deleteCollection(env.QDRANT_COLLECTION)
+      .catch(() => undefined);
+    await ensureCollection();
+  }
+
   const app = createApp();
   const httpServer = createServer(app);
   const io = createIo(httpServer);
@@ -50,6 +60,10 @@ export async function stopTestServer(ctx: TestContext): Promise<void> {
     ctx.io.close((err) => (err ? reject(err) : resolve()));
   });
   await drainPresence();
+  if (env.AI_ENABLED) {
+    const { stopIngestWorker } = await import('../../src/ai/ingest/queue.js');
+    await stopIngestWorker().catch(() => undefined);
+  }
   await disconnectMongo();
   await disconnectRedis();
 }

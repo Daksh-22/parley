@@ -407,6 +407,7 @@ export async function sendMessage(roomId: string, body: string): Promise<void> {
     body: trimmed,
     clientMsgId,
     createdAt: new Date().toISOString(),
+    kind: 'user',
     status: 'sending',
   };
   r.messages = [...r.messages, optimistic];

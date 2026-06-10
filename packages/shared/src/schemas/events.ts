@@ -1,6 +1,18 @@
 import { z } from 'zod';
 import { objectIdSchema } from './entities.js';
 import type { MessageWire, RoomWire } from './wire.js';
+import type {
+  AiAskPayload,
+  AiCatchupPayload,
+  AiDecisionsPayload,
+  AiDocStatusEvent,
+  AiFeedbackPayload,
+  AiStreamDeltaEvent,
+  AiStreamDoneEvent,
+  AiStreamErrorEvent,
+  AiStreamStartEvent,
+  DecisionsResult,
+} from './ai.js';
 
 // ---------------------------------------------------------------------------
 // Acks. Every client-to-server event is acknowledged with this envelope.
@@ -105,6 +117,11 @@ export interface ServerToClientEvents {
   'typing:update': (event: TypingUpdateEvent) => void;
   'presence:update': (event: PresenceUpdateEvent) => void;
   'presence:state': (event: PresenceStateEvent) => void;
+  'ai:stream:start': (event: AiStreamStartEvent) => void;
+  'ai:stream:delta': (event: AiStreamDeltaEvent) => void;
+  'ai:stream:done': (event: AiStreamDoneEvent) => void;
+  'ai:stream:error': (event: AiStreamErrorEvent) => void;
+  'ai:doc:status': (event: AiDocStatusEvent) => void;
 }
 
 export interface ClientToServerEvents {
@@ -127,5 +144,18 @@ export interface ClientToServerEvents {
   'sync:since': (
     payload: SyncSincePayload,
     ack: (response: Ack<{ rooms: SyncRoomResult[] }>) => void,
+  ) => void;
+  'ai:ask': (payload: AiAskPayload, ack: (response: Ack<{ streamId: string }>) => void) => void;
+  'ai:catchup': (
+    payload: AiCatchupPayload,
+    ack: (response: Ack<{ streamId: string }>) => void,
+  ) => void;
+  'ai:decisions': (
+    payload: AiDecisionsPayload,
+    ack: (response: Ack<DecisionsResult>) => void,
+  ) => void;
+  'ai:feedback': (
+    payload: AiFeedbackPayload,
+    ack: (response: Ack<{ recorded: true }>) => void,
   ) => void;
 }

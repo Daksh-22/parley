@@ -10,6 +10,8 @@ import {
   type SyncRoomResult,
 } from '@parley/shared';
 import { WsError, isDuplicateKeyError } from '../lib/errors.js';
+import { logger } from '../lib/logger.js';
+import { enqueueMessageEmbed } from '../ai/ingest/queue.js';
 import { Room } from '../models/room.model.js';
 import { Membership } from '../models/membership.model.js';
 import { Message, type MessageDoc } from '../models/message.model.js';
@@ -127,6 +129,10 @@ export function registerHandlers(io: AppServer, socket: AppSocket): void {
       // Then broadcast to everyone else in the room. The sender's canonical
       // copy arrives via the ack.
       socket.to(roomChannel(payload.roomId)).emit('message:new', wire);
+      // Fire-and-forget into the memory pipeline; chat never waits on AI.
+      enqueueMessageEmbed(message._id.toHexString()).catch((err: unknown) => {
+        logger.warn({ err }, 'embed enqueue failed');
+      });
       return { message: wire };
     }),
   );

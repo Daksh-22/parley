@@ -22,5 +22,9 @@ export function toMessageWire(message: MessageDoc, sender: PublicUser): MessageW
     body: message.body,
     clientMsgId: message.clientMsgId,
     createdAt: message.createdAt.toISOString(),
+    kind: message.kind ?? 'user',
+    // Citations are validated against the shared schema when constructed.
+    citations: message.citations as MessageWire['citations'],
+    aiQuestion: message.aiQuestion,
   };
 }

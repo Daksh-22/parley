@@ -1,8 +1,11 @@
 import { z } from 'zod';
 import { objectIdSchema, publicUserSchema } from './entities.js';
+import { citationSchema } from './ai.js';
 
 // Canonical message shape on the wire. The sender summary is embedded so
 // clients never need a follow-up user lookup to render a message.
+// kind 'ai' marks a persisted Recall answer; its citations array maps the
+// inline [n] markers to real messages and document chunks.
 export const messageWireSchema = z.object({
   id: objectIdSchema,
   roomId: objectIdSchema,
@@ -10,6 +13,9 @@ export const messageWireSchema = z.object({
   body: z.string(),
   clientMsgId: z.string(),
   createdAt: z.string().datetime(),
+  kind: z.enum(['user', 'ai']).default('user'),
+  citations: z.array(citationSchema).optional(),
+  aiQuestion: z.string().optional(),
 });
 export type MessageWire = z.infer<typeof messageWireSchema>;
 

@@ -1,0 +1,99 @@
+# Parley local infrastructure.
+#
+# Default profile: mongo + redis only, the server runs on the host (pnpm dev).
+#   docker compose up -d
+#
+# Single app instance:
+#   docker compose --profile app up -d --build
+#
+# Two server instances behind nginx (scaling demo, see docs/ARCHITECTURE.md):
+#   docker compose --profile scale up -d --build
+
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', 'db.adminCommand({ ping: 1 })']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    ports:
+      - '4000:4000'
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      MONGO_URI: mongodb://mongo:27017/parley
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET in your shell or .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET in your shell or .env}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  server-a:
+    profiles: [scale]
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    environment: &scale-env
+      NODE_ENV: production
+      PORT: 4000
+      MONGO_URI: mongodb://mongo:27017/parley
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?set JWT_ACCESS_SECRET in your shell or .env}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:?set JWT_REFRESH_SECRET in your shell or .env}
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  server-b:
+    profiles: [scale]
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    environment: *scale-env
+    depends_on:
+      mongo:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  nginx:
+    profiles: [scale]
+    image: nginx:1.27-alpine
+    ports:
+      - '4000:4000'
+    volumes:
+      - ./infra/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - server-a
+      - server-b
+
+volumes:
+  mongo-data:

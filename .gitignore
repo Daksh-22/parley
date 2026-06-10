@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# Environment: real env files never enter git. .env.example is the committed template.
+.env
+.env.*
+!.env.example
+
+# Local dev infrastructure (mongod data, redis dumps, pid files)
+.localdev/
+
+# Test and coverage artifacts
+coverage/
+.vitest/
+
+# Logs
+*.log
+
+# OS noise
+.DS_Store
+
+# Editor state
+.idea/
+*.swp

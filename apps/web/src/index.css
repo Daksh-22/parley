@@ -1,0 +1,31 @@
+@import 'tailwindcss';
+
+/*
+ * Parley design tokens.
+ * Dark theme first. A neutral gray ramp plus exactly one accent.
+ * The full design system lands with the chat UI; these are the foundations.
+ */
+@theme {
+  --font-sans: 'Inter', 'InterVariable', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
+
+  /* Neutral ramp, dark first */
+  --color-surface-0: #0e0f12;
+  --color-surface-1: #16181d;
+  --color-surface-2: #1e2128;
+  --color-surface-3: #262a33;
+  --color-border-subtle: #2c303a;
+  --color-border-strong: #3a4048;
+
+  --color-text-primary: #e8eaed;
+  --color-text-secondary: #9aa0ab;
+  --color-text-muted: #6b7280;
+
+  /* The one accent */
+  --color-accent: #4f8cff;
+  --color-accent-hover: #6b9fff;
+  --color-accent-muted: #2b4a80;
+
+  --color-danger: #e5484d;
+  --color-success: #46a758;
+}

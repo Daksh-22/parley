@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm -v)",
+      "Bash(git --version)",
+      "Bash(docker version *)",
+      "Bash(docker compose *)",
+      "Bash(corepack --version)",
+      "Read(//Applications/**)",
+      "Bash(brew list *)",
+      "Bash(corepack enable *)",
+      "Bash(corepack prepare *)",
+      "Bash(brew install *)",
+      "Bash(git init *)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm format:fix)",
+      "Bash(pnpm lint *)",
+      "Bash(pnpm typecheck *)",
+      "Bash(mkdir -p .localdev/mongo .localdev/redis)",
+      "Bash(mongod --dbpath .localdev/mongo --port 27017 --fork --logpath .localdev/mongo/mongod.log)",
+      "Bash(/opt/homebrew/bin/redis-server --daemonize yes --port 6379 --dir .localdev/redis)",
+      "Bash(/opt/homebrew/bin/redis-cli ping *)",
+      "Bash(lsof -nP -iTCP:27017 -sTCP:LISTEN)"
+    ]
+  }
+}

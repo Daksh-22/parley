@@ -11,6 +11,7 @@ process.env['LOG_LEVEL'] ??= 'error';
 
 // Rate limits stay out of the way unless a test opts into strict values via
 // vi.hoisted before its imports run.
+process.env['AUTH_RATE_LIMIT'] ??= '10000';
 process.env['MSG_RATE_LIMIT'] ??= '10000';
 process.env['JOIN_RATE_LIMIT'] ??= '10000';
 process.env['CONN_RATE_LIMIT'] ??= '10000';

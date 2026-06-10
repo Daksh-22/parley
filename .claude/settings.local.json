@@ -25,7 +25,15 @@
       "Bash(git add *)",
       "Bash(git commit -q -m 'feat: domain models and auth with JWT plus socket handshake verification *)",
       "Bash(git commit -q -m 'feat: realtime core with receipts, presence, typing, and reconnect sync *)",
-      "Bash(git commit -q -m 'feat: redis adapter, sliding-window rate limits, and multi-instance tests *)"
+      "Bash(git commit -q -m 'feat: redis adapter, sliding-window rate limits, and multi-instance tests *)",
+      "Bash(pnpm --filter @parley/server build)",
+      "Bash(ulimit -n 10240)",
+      "Bash(openssl rand *)",
+      "Bash(NODE_ENV=production PORT=4000 MONGO_URI=mongodb://127.0.0.1:27017/parley-load REDIS_URL=redis://127.0.0.1:6379 JWT_ACCESS_SECRET=$\\(openssl rand -hex 32\\) JWT_REFRESH_SECRET=$\\(openssl rand -hex 32\\) CORS_ORIGIN=http://localhost:5173 LOG_LEVEL=warn CONN_RATE_LIMIT=1000000 node dist/index.js)",
+      "Bash(lsof -nP -iTCP:4000 -sTCP:LISTEN)",
+      "Bash(k6 run *)",
+      "Bash(tail -5 \"/private/tmp/claude-501/-Users-dakshjain-Downloads-ChatterUP-Project-main-2/2163b2b0-c423-4b9c-b295-65e0e54a2d17/tasks/bv4961ty2.output\" 2>/dev/null; echo \"--- mem samples: $\\(wc -l < /tmp/parley-mem.log 2>/dev/null\\)\"; tail -2 /tmp/parley-load-server.log 2>/dev/null)",
+      "Bash(git commit -q -m 'feat: k6 load test with measured results, tunable auth rate limit *)"
     ]
   }
 }

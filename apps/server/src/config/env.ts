@@ -13,6 +13,7 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().url(),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error']).default('info'),
   // Rate limits: sliding window with a temporary mute on violation.
+  AUTH_RATE_LIMIT: z.coerce.number().int().positive().default(30),
   MSG_RATE_LIMIT: z.coerce.number().int().positive().default(10),
   MSG_RATE_WINDOW_MS: z.coerce.number().int().positive().default(10_000),
   MSG_MUTE_SECONDS: z.coerce.number().int().positive().default(10),

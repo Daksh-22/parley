@@ -12,6 +12,16 @@ const envSchema = z.object({
   REFRESH_TOKEN_TTL_SECONDS: z.coerce.number().int().positive().default(1209600),
   CORS_ORIGIN: z.string().url(),
   LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error']).default('info'),
+  // Rate limits: sliding window with a temporary mute on violation.
+  MSG_RATE_LIMIT: z.coerce.number().int().positive().default(10),
+  MSG_RATE_WINDOW_MS: z.coerce.number().int().positive().default(10_000),
+  MSG_MUTE_SECONDS: z.coerce.number().int().positive().default(10),
+  JOIN_RATE_LIMIT: z.coerce.number().int().positive().default(15),
+  JOIN_RATE_WINDOW_MS: z.coerce.number().int().positive().default(10_000),
+  JOIN_MUTE_SECONDS: z.coerce.number().int().positive().default(5),
+  CONN_RATE_LIMIT: z.coerce.number().int().positive().default(30),
+  CONN_RATE_WINDOW_MS: z.coerce.number().int().positive().default(60_000),
+  CONN_MUTE_SECONDS: z.coerce.number().int().positive().default(60),
 });
 
 export type Env = z.infer<typeof envSchema>;

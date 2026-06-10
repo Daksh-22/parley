@@ -1,7 +1,10 @@
 import type { Server as HttpServer } from 'node:http';
 import { Server } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
+import type { Redis } from 'ioredis';
 import { env } from '../config/env.js';
 import { logger } from '../lib/logger.js';
+import { redisPub, redisSub } from '../lib/redis.js';
 import { Membership } from '../models/membership.model.js';
 import { socketAuthMiddleware } from './socket-auth.js';
 import { registerHandlers, MAX_ROOMS_PER_USER } from './handlers.js';
@@ -9,7 +12,13 @@ import { presenceConnect, presenceDisconnect, listOnlineUserIds } from './presen
 import { roomChannel } from './serialize.js';
 import type { AppServer } from './types.js';
 
-export function createIo(httpServer: HttpServer): AppServer {
+export interface CreateIoOptions {
+  // Override the adapter's pub/sub pair. Tests use this to run a second
+  // instance in the same process with its own subscriber connection.
+  redisClients?: { pub: Redis; sub: Redis };
+}
+
+export function createIo(httpServer: HttpServer, options: CreateIoOptions = {}): AppServer {
   const io: AppServer = new Server(httpServer, {
     cors: {
       origin: env.CORS_ORIGIN,
@@ -19,6 +28,11 @@ export function createIo(httpServer: HttpServer): AppServer {
     // constrained by zod schemas.
     maxHttpBufferSize: 16 * 1024,
   });
+
+  // Redis adapter: room broadcasts and io.emit fan out across every server
+  // instance, which is what lets the websocket-only fleet scale horizontally.
+  const { pub, sub } = options.redisClients ?? { pub: redisPub, sub: redisSub };
+  io.adapter(createAdapter(pub, sub));
 
   io.use(socketAuthMiddleware);
 

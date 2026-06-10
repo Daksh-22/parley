@@ -9,6 +9,12 @@ process.env['JWT_REFRESH_SECRET'] ??= 'test-only-refresh-secret-0123456789abcde'
 process.env['CORS_ORIGIN'] ??= 'http://localhost:5173';
 process.env['LOG_LEVEL'] ??= 'error';
 
+// Rate limits stay out of the way unless a test opts into strict values via
+// vi.hoisted before its imports run.
+process.env['MSG_RATE_LIMIT'] ??= '10000';
+process.env['JOIN_RATE_LIMIT'] ??= '10000';
+process.env['CONN_RATE_LIMIT'] ??= '10000';
+
 if (!process.env['MONGO_URI'].includes('test')) {
   throw new Error('Refusing to run tests against a non-test Mongo database');
 }

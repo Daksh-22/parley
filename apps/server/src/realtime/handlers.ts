@@ -15,6 +15,7 @@ import { Membership } from '../models/membership.model.js';
 import { Message, type MessageDoc } from '../models/message.model.js';
 import { toRoomWire } from '../services/room-service.js';
 import { wrapHandler } from './ack.js';
+import { checkMessageRate, checkJoinRate } from './rate-limit.js';
 import { getPublicUser } from './user-cache.js';
 import { ghostUser, roomChannel, toMessageWire } from './serialize.js';
 import type { AppServer, AppSocket } from './types.js';
@@ -51,6 +52,13 @@ export function registerHandlers(io: AppServer, socket: AppSocket): void {
   socket.on(
     'room:join',
     wrapHandler(socket, 'room:join', roomJoinPayloadSchema, async ({ roomId }) => {
+      const joinRate = await checkJoinRate(userId);
+      if (!joinRate.allowed) {
+        throw new WsError(
+          'RATE_LIMITED',
+          `Joining rooms too quickly. Try again in ${joinRate.retryAfterSeconds}s`,
+        );
+      }
       const room = await Room.findById(roomId);
       if (!room) throw new WsError('NOT_FOUND', 'Room not found');
 
@@ -84,6 +92,13 @@ export function registerHandlers(io: AppServer, socket: AppSocket): void {
   socket.on(
     'message:send',
     wrapHandler(socket, 'message:send', messageSendPayloadSchema, async (payload) => {
+      const rate = await checkMessageRate(userId);
+      if (!rate.allowed) {
+        throw new WsError(
+          'RATE_LIMITED',
+          `You are sending messages too quickly. Muted for ${rate.retryAfterSeconds}s`,
+        );
+      }
       await requireMembership(payload.roomId);
 
       let message: MessageDoc;

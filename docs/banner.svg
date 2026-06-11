@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="160" viewBox="0 0 800 160" role="img" aria-label="Parley">
+  <rect width="800" height="160" fill="#F4F3EE"/>
+  <!-- one highlight sweep behind the logotype, nothing else -->
+  <rect x="296" y="58" width="208" height="34" rx="4" fill="#FFDF8E"/>
+  <text x="400" y="88" text-anchor="middle" font-family="Newsreader, Georgia, serif" font-size="56" font-weight="500" fill="#1F1E1A">Parley</text>
+  <text x="400" y="124" text-anchor="middle" font-family="'Spline Sans Mono', ui-monospace, monospace" font-size="13" letter-spacing="0.08em" fill="#6B6960">CHAT APPS STORE MESSAGES. PARLEY REMEMBERS THEM.</text>
+</svg>

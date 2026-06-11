@@ -86,7 +86,8 @@
       "Bash(grep -vE \"INFO|service|^>|^$\")",
       "Bash(grep -vE \"INFO|service|^>|^$|uri\")",
       "Bash(pnpm ai:metrics)",
-      "Bash(git commit -q -m 'feat: golden-set evals and AI call metrics *)"
+      "Bash(git commit -q -m 'feat: golden-set evals and AI call metrics *)",
+      "Bash(git commit -q -m 'docs: launch-page README, product doc, AI architecture decisions *)"
     ]
   }
 }

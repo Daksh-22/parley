@@ -1,109 +1,95 @@
-# Parley
+<p align="center">
+  <img src="docs/banner.svg" alt="Parley: chat apps store messages, Parley remembers them" width="800" />
+</p>
 
-Fast, focused team chat: a production-grade realtime messaging app with delivery receipts, presence, and horizontal scaling, built as a flagship portfolio project.
+Parley is a realtime team messenger whose memory is the product: everything your team has ever said or shared becomes a permission-aware knowledge base that answers questions with citations you can click.
 
-<!-- demo gif placeholder: record with cmd+shift+5 on macOS (select region, record,
-     stop from the menu bar), convert to gif (e.g. with gifski or ezgif.com),
-     save as docs/demo.gif, then replace this comment with:
-     ![Parley demo](docs/demo.gif) -->
+<!-- demo gif placeholder: record the Catch me up moment.
+     1. pnpm seed:demo, sign in as demo / demo-password-1
+     2. open #launch-week, click the "Catch me up · 11 unread" pill
+     3. click a citation chip and let the highlight sweep land
+     Record with cmd+shift+5, convert to gif, save as docs/demo.gif,
+     then replace this comment with: ![Catch me up demo](docs/demo.gif) -->
 
-> Demo GIF pending. See the comment above for recording instructions.
+> Demo GIF pending. Recording steps are in the comment above.
 
-## Features
+## The problem
 
-- Realtime messaging over websockets with server-acked sends and optimistic UI
-- Delivery states on every own message: sending, sent, delivered, read
-- Read receipts via forward-only cursors, per-room unread counts derived from them
-- Presence with multi-tab support: no flicker when one of several tabs closes
-- Typing indicators, debounced client-side, expired server-side after 3 seconds
-- Reconnect sync: missed messages replayed exactly, capped, with a refetch fallback
-- Idempotent sends: retries can never duplicate a message
-- Sliding-window rate limits in Redis with temporary mutes, per user and per IP
-- Cursor-paginated history with matching compound indexes, no unbounded queries
-- Horizontal scaling through the Socket.IO Redis adapter, demonstrated by tests
-- Dark-first design system, Lighthouse accessibility 100 on both screens
+Scrollback is a graveyard. Decisions get made in passing, then buried under three days of messages. The person who knows is asleep in another timezone. Search finds words, not answers, and new teammates inherit none of it.
+
+## The insight
+
+A chat app already holds the team's collective memory; it just cannot answer for it. Parley embeds every message and document as it arrives, retrieves with current-membership permissions at query time, and answers questions with inline citations that jump back to the exact source message, highlighter sweep included. If the history does not contain the answer, it says so instead of guessing.
+
+## Three features
+
+1. **Recall in the room.** Type `@recall what did we decide about the launch date?` and a cited answer streams into the conversation for everyone, persisted like any other message. Each citation chip previews on hover and jumps on click.
+2. **Catch me up.** Come back to 40 unread messages and one pill turns them into a cited digest of what happened and what was decided, scoped to exactly what you missed.
+3. **Ask anything.** Cmd+K asks across every room you belong to, privately. Extract decisions on demand per room, graded answers feed the eval set, and a per-room switch turns memory off entirely.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  subgraph clients [Browser clients]
-    A[React + socket.io-client\nwebsocket only]
-    B[React + socket.io-client\nwebsocket only]
+  subgraph clients [Clients]
+    W[React web app\nwebsocket only]
+    M[MCP clients\nClaude Desktop, Cursor]
   end
-  N[nginx\nleast_conn] --> S1[server A\nExpress + Socket.IO]
-  N --> S2[server B\nExpress + Socket.IO]
-  A --> N
-  B --> N
-  S1 <--> R[(Redis\nadapter pub/sub, presence,\nrate limits)]
+  N[nginx least_conn] --> S1[server A]
+  N --> S2[server B]
+  W --> N
+  M --> S1
+  S1 <--> R[(Redis\nadapter, presence,\nquotas, queue)]
   S2 <--> R
-  S1 --> M[(MongoDB\nusers, rooms,\nmemberships, messages)]
-  S2 --> M
+  S1 --> DB[(MongoDB\nmessages, rooms,\nmemberships, docs)]
+  S2 --> DB
+  R --> WK[ingest worker\nbatch embed]
+  WK --> Q[(Qdrant\nvectors)]
+  S1 -. retrieval:\nvector + lexical,\nRRF, permission filter .-> Q
+  S1 -. lexical leg .-> DB
+  S1 --> P[LLM provider\nAnthropic / OpenAI / mock]
 ```
 
-Clients connect with `transports: ['websocket']` only, so any instance can serve any connection and nginx needs no sticky sessions. Room broadcasts fan out across instances through the Redis adapter. MongoDB holds the durable state with indexes matched to every query pattern, and read state lives as a single cursor per membership rather than per-message arrays. Presence is a Redis TTL key per user with a connection count, refreshed by a heartbeat, so a crashed instance can never strand anyone as permanently online. The full decision log, with rejected alternatives, is in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Messages persist to MongoDB, then a BullMQ worker batch-embeds them into Qdrant. A question runs both retrieval legs (vector and lexical) filtered by the asker's current room memberships, fuses them with reciprocal rank fusion, packs the strongest sources into a token budget, and streams a cited answer over the same socket layer that carries chat. The full decision log lives in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+## Measured numbers
+
+Every number comes from a script in this repo; rerun them yourself. Methods and caveats: [LOADTEST.md](docs/LOADTEST.md), [EVALS.md](docs/EVALS.md).
+
+| What                                             | Result             | Source                               |
+| ------------------------------------------------ | ------------------ | ------------------------------------ |
+| Concurrent websocket clients sustained           | 1,000              | `k6 run infra/loadtest/chat-load.js` |
+| Message delivery latency                         | p50 2ms, p95 19ms  | same run                             |
+| Retrieval recall@5 on the 30-question golden set | 96.7%              | `pnpm ai:eval`                       |
+| Retrieval MRR                                    | 0.859              | `pnpm ai:eval`                       |
+| AI pipeline overhead (without provider time)     | p50 54ms, p95 90ms | `pnpm ai:metrics`                    |
+| Integration tests, all green with zero API keys  | 58                 | `pnpm test`                          |
+
+## Security and privacy stance
+
+- Permission is evaluated when the query runs, not when content was indexed: leave a room and its knowledge leaves you, including caches.
+- Retrieved content is treated as untrusted data: delimiter-wrapped sources, a hardened system prompt, no tools, no actions, markdown rendered without raw HTML. Threat model in [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+- Per-room memory switch: when off, nothing from that room is embedded, retrieved, or sent to a model.
+- Cost as a control surface: daily per-user token quotas, context budgets, batch embedding, and a provider circuit breaker.
+- argon2id passwords, short-lived access JWTs, rotating httpOnly refresh cookies, sender identity only ever from the authenticated socket.
+- Not end to end encrypted, on purpose: the server must read content to embed it. The tension and a future client-side design are discussed honestly in ARCHITECTURE.md.
 
 ## Quickstart
 
-Prerequisites: Node 20+, pnpm (via `corepack enable`), Docker.
+Prerequisites: Node 20+, pnpm (`corepack enable`), Docker.
 
 ```bash
 pnpm install
-docker compose up -d
-cp .env.example .env && pnpm dev
+docker compose up -d        # mongo, redis, qdrant
+cp .env.example .env && pnpm seed:demo && pnpm dev
 ```
 
-Open http://localhost:5173, create an account, and you are chatting in #general. The API runs on http://localhost:4000. The example env values boot fine for local development; generate real secrets with `openssl rand -hex 32` before deploying anything.
-
-## Stack and rationale
-
-| Choice                            | Why                                                                              |
-| --------------------------------- | -------------------------------------------------------------------------------- |
-| TypeScript strict, ESM everywhere | Errors at compile time, no `any` without a written justification                 |
-| Express 5 + Socket.IO 4           | Rooms, acks, and reconnection handled by a battle-tested layer over raw ws       |
-| MongoDB + Mongoose 8              | Append-heavy message log with cursor pagination maps cleanly to compound indexes |
-| Redis (ioredis)                   | One dependency covers adapter pub/sub, presence TTLs, and atomic rate limiting   |
-| React 18 + Vite + Tailwind 4      | Fast iteration, design tokens as CSS variables, no runtime CSS cost              |
-| react-virtuoso                    | Virtualized message list that stays anchored to the bottom without layout shift  |
-| zod in a shared package           | One schema validates on the server and types both sides of the wire              |
-| pnpm workspaces                   | Server, web, and shared contracts in one repo with strict dependency boundaries  |
-
-## Measured performance
-
-Single instance on an Apple M3 (8 GB), load generator on the same host, websocket transport. Full method and caveats in [docs/LOADTEST.md](docs/LOADTEST.md).
-
-- 1,000 concurrent websocket clients sustained
-- Message ack latency: p50 3 ms, p95 19 ms
-- Broadcast delivery latency: p50 2 ms, p95 19 ms
-- 834,700 message deliveries at about 4,400/s, zero errors
-- Server peak RSS 336 MB
-
-## Security posture
-
-- argon2id password hashing, never anything weaker
-- Short-lived access JWT in memory only; rotating refresh JWT in an httpOnly cookie scoped to `/auth`
-- Sender identity comes exclusively from the authenticated socket. Payload schemas strip unknown keys, so a forged senderId never reaches a handler
-- Every HTTP route and every socket event validated with zod; every handler acked and error-wrapped
-- helmet on, CORS locked to the single frontend origin with credentials
-- Rate limiting at four layers: auth requests, socket connections per IP, messages per user, room joins per user
-- No secrets in the repo or its history; env validated at boot, the server refuses to start otherwise
-
-## Testing
-
-37 integration tests across 7 files run the real stack (Mongo, Redis, live sockets): auth flows, socket handshake rejection, two-client message exchange, forged-sender rejection, idempotent dedup, delivery and read receipts, typing exclusion and expiry, multi-tab presence, reconnect sync, pagination walks, rate-limit mutes and recovery, and cross-instance delivery through the Redis adapter.
-
-```bash
-pnpm test          # requires mongo and redis (docker compose up -d)
-pnpm lint && pnpm typecheck
-```
-
-CI runs lint, format check, typecheck, tests, and builds on every push.
+Open http://localhost:5173, sign in as `demo / demo-password-1`, open `#launch-week`, and click the Catch me up pill. Ask the suggested questions with cmd+k; click any citation and watch the jump. The default config uses the deterministic mock provider, no keys needed. Real providers: set `AI_CHAT_PROVIDER=anthropic` with `ANTHROPIC_API_KEY`, or `openai` for both chat and embeddings.
 
 ## Roadmap
 
-- Direct messages (the data model already carries `isDM`)
-- Message editing and deletion with tombstones
-- Full-text search over message history
-- File and image attachments
-- End-to-end browser tests (Playwright)
-- Presence expiry push via Redis keyspace notifications instead of TTL-only
+- Real-provider eval baseline and the rerank decision it justifies
+- Sentence-window chunking for short documents
+- Direct messages, message edit and delete with re-embedding
+- Presence expiry push via Redis keyspace notifications
+- Workspace-level roles and an admin view of the memory switch

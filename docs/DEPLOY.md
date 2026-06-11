@@ -73,3 +73,41 @@ docker compose --profile scale up --build  # two servers behind nginx on :4000
 ```
 
 The `scale` profile is the local stand-in for multi-instance production: two server containers, one nginx with `least_conn`, both servers sharing Redis for adapter fan-out. The compose file requires `JWT_ACCESS_SECRET` and `JWT_REFRESH_SECRET` in your shell or a root `.env` and fails fast with a message if they are absent.
+
+## The AI stack in production
+
+The chat core runs without any of this; deploy it first, add memory second.
+
+### Qdrant
+
+- Managed: Qdrant Cloud has a free 1GB cluster, plenty for tens of thousands
+  of messages at 1536 dimensions. Create a cluster, then set `QDRANT_URL` to
+  the cluster URL including the `:6333` port. If your cluster requires an API
+  key, front it with the cluster URL form `https://<id>.cloud.qdrant.io:6333`
+  and add the key support via `QDRANT_API_KEY` before going live (the local
+  and compose setups do not use one).
+- Self-hosted: the compose file already ships a `qdrant` service with a
+  persistent volume.
+- First boot creates the collection automatically; `pnpm ai:backfill` indexes
+  any history that predates AI being enabled.
+
+### Provider keys and AI env
+
+| Variable                  | Required                      | Notes                                                                |
+| ------------------------- | ----------------------------- | -------------------------------------------------------------------- |
+| `AI_ENABLED`              | yes, for memory               | `false` leaves a pure chat app                                       |
+| `AI_CHAT_PROVIDER`        | yes                           | `anthropic`, `openai`, or `mock`                                     |
+| `AI_EMBED_PROVIDER`       | yes                           | `openai` or `mock`                                                   |
+| `ANTHROPIC_API_KEY`       | if chat provider is anthropic | boot fails fast if missing                                           |
+| `OPENAI_API_KEY`          | if either provider is openai  | same                                                                 |
+| `QDRANT_URL`              | yes                           | Qdrant Cloud or compose service URL                                  |
+| `AI_DAILY_TOKEN_QUOTA`    | no                            | default 200000 tokens per user per day                               |
+| `AI_CONTEXT_TOKEN_BUDGET` | no                            | default 4000, caps sources per ask                                   |
+| `AI_ANSWER_MAX_TOKENS`    | no                            | default 700                                                          |
+| `AI_TIMEOUT_MS`           | no                            | default 30000                                                        |
+| `RERANK_ENABLED`          | no                            | keep `false` until a real-provider eval justifies it (docs/EVALS.md) |
+
+Operational notes: the ingest worker runs inside the server process, so no
+extra dyno is needed; quotas live in Redis and reset by UTC day; the circuit
+breaker is per instance and needs no configuration to be safe. Watch cost
+with `pnpm ai:metrics` against the production database.

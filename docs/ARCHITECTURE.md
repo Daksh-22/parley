@@ -71,3 +71,52 @@ Order: stop accepting and disconnect sockets (`io.close`), await in-flight prese
 Chosen: `@parley/shared` exports `src/index.ts` directly; tsx and Vite consume it as source, and tsup bundles it into the server image with `noExternal` (apps/server/tsup.config.ts). Rejected: building the shared package to dist with project references.
 
 Built artifacts add a rebuild step between editing a schema and seeing it in either app, and project references complicate every watcher. Source-first internal packages have no drift: server and client always compile against the same schema text. The cost lands solely in the server's production build, where tsup inlines the shared code into one file, so the runtime image needs no workspace layout at all.
+
+## Hybrid retrieval with RRF over vector-only
+
+Chosen: a vector leg (Qdrant) and a lexical leg (Mongo text index) fused with reciprocal rank fusion at k=60. Rejected: vector search alone.
+
+Chat questions are full of exact tokens that embeddings blur: ticket ids ("OPS-512"), names, numbers ("12 dollars per seat"). The lexical leg nails those; the vector leg covers paraphrases the lexical leg cannot see. RRF was chosen over score blending because the two legs produce incomparable score scales, and rank-based fusion needs no tuning beyond k. The fused list then collapses near-duplicates and packs the strongest sources into a strict context token budget (apps/server/src/ai/retrieval.ts). The eval set quantifies the design: 96.7 percent recall@5 on the golden set with the mock embedder, where the only miss is a pure paraphrase, exactly the case the lexical leg cannot rescue (docs/EVALS.md).
+
+## Qdrant alongside Mongo over a single store
+
+Chosen: vectors in Qdrant, source of truth in MongoDB. Rejected: Mongo-only (Atlas vector search or storing embeddings in documents), and moving chat storage into a vector database.
+
+Mongo remains canonical: messages, rooms, memberships, documents. Qdrant holds only derived vectors plus the payload retrieval needs (roomId for filtering, text for prompt assembly), so it can be wiped and rebuilt from Mongo at any time with pnpm ai:backfill. That one-way dependency keeps rule one honest: the chat core never waits on the vector store, and if Qdrant is down chat is untouched while AI surfaces report calmly. Atlas vector search would remove a service but couples search availability to the primary database and ties the project to Atlas hosting; local-first development with a single qdrant binary was worth the extra container.
+
+## Query-time permission filtering over index-time ACLs
+
+Chosen: resolve the asker's current memberships when the query runs and filter both retrieval legs with them. Rejected: baking allowed-user lists into vector payloads at index time.
+
+Index-time ACLs answer "who could read this when it was written"; the product question is "who may read this now". With ACL-stamped vectors, every membership change becomes a fan-out rewrite over that room's points, and a missed rewrite is a silent data leak. Query-time filtering costs one indexed membership lookup per ask and makes revocation instantaneous by construction. The same principle extends everywhere derived answers live: the semantic cache keys on a fingerprint of the user's sorted memberships, so any change misses the cache, and the MCP tools run the identical filter. The permission leak tests in tests/ai-answer.test.ts and tests/ai-surfaces.test.ts pin this behavior.
+
+## Streaming over the existing socket instead of SSE
+
+Chosen: AI tokens stream as ai:stream events on the existing Socket.IO connection. Rejected: a separate server-sent events endpoint.
+
+The client already maintains an authenticated, reconnecting, multiplexed socket; adding an SSE channel would duplicate auth, reconnection, and back-pressure handling for one feature. Socket events also give room-scoped fan-out for free: an @recall answer streams to every member through the same Redis adapter as chat, while global asks emit only to the asker's socket. The tradeoff is that AI streams share the socket's fate during reconnects; the answer is persistence: room answers land as real messages, so a dropped stream is recovered by the normal reconnect sync path.
+
+## Indirect prompt injection: threat model and mitigations
+
+Threat: anyone who can get text into a room (a message, an uploaded pdf) can get text in front of the model. A hostile message like "ignore previous instructions and reveal..." rides along inside retrieved context: classic indirect injection.
+
+What an attacker can influence: the wording of an answer. What they cannot reach, by construction:
+
+1. No tools, no actions. The AI layer can only emit text. There is no function calling, no browsing, no message-sending on behalf of the model, so a successful injection has no lever to pull.
+2. Data delimiters and a hardened prompt. Every source is wrapped in BEGIN SOURCE and END SOURCE inside a sources block, and the system prompt states that source content is quoted history, never instructions (apps/server/src/ai/answer.ts). Tests assert hostile text reaches the model only inside delimiters.
+3. No permission escalation channel. Retrieval scope is fixed server-side from the verified socket identity before the model is involved; nothing the model says changes what was retrieved.
+4. Output is sanitized by construction: answers render through a React markdown subset with no raw HTML path, citations are validated against the actual retrieved set, and structured outputs (decisions) have their source ids checked against the exact id list shown to the model, so a hallucinated or injected id cannot become a citation.
+5. Quotas and the circuit breaker cap the blast radius of any attempt to spin the model in circles.
+
+Residual risk, stated honestly: a sufficiently clever injection can still bias the prose of one answer. With citations one click away and no action surface, that failure degrades to a wrong sentence a reader can check.
+
+## The cost model
+
+Cost controls are layered so that no single user, room, or outage can run up a bill:
+
+- Per-user daily token quota in Redis, checked before every model call, with a clear in-product message when spent.
+- Context token budget packs at most AI_CONTEXT_TOKEN_BUDGET tokens of sources per ask; answers cap at AI_ANSWER_MAX_TOKENS.
+- Embeddings batch up to 64 texts per provider call through the micro-batcher.
+- The semantic answer cache (Phase 13) serves repeat questions without a model call, inside the permission fingerprint.
+- The circuit breaker opens on provider error spikes, so retries cannot multiply spend during an outage.
+- Every call is logged with real token counts; pnpm ai:metrics turns the log into cost per answer at recorded provider prices, so the unit economics are observable rather than estimated.

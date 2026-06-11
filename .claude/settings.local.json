@@ -96,7 +96,8 @@
       "Bash(echo \"exit: $?\")",
       "Read(//tmp/**)",
       "Bash(AI_ENABLED=false pnpm --filter @parley/server exec vitest run tests/auth.test.ts tests/socket-auth.test.ts tests/realtime-messaging.test.ts tests/realtime-sync.test.ts tests/multi-instance.test.ts tests/rate-limit.test.ts tests/rate-limit-conn.test.ts tests/invites-stats.test.ts tests/ai-off.test.ts)",
-      "Bash(git commit -q -m 'feat: chaos proof, invite links, public stats, and the E2EE stance *)"
+      "Bash(git commit -q -m 'feat: chaos proof, invite links, public stats, and the E2EE stance *)",
+      "Bash(kill 49565 79179 81895 81896)"
     ]
   }
 }

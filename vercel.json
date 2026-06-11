@@ -1,4 +1,0 @@
-{
-  "buildCommand": "pnpm install && pnpm --filter @parley/web build",
-  "outputDirectory": "apps/web/dist"
-}

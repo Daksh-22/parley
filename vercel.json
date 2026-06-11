@@ -1,5 +1,10 @@
 {
   "buildCommand": "pnpm --filter @parley/web build",
   "installCommand": "pnpm install --frozen-lockfile",
-  "outputDirectory": "apps/web/dist"
+  "outputDirectory": "apps/web/dist",
+  "roots": {
+    "apps/web": {
+      "use": "@vercel/static-build"
+    }
+  }
 }

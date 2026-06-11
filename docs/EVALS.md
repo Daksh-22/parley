@@ -54,13 +54,13 @@ cost columns to become nonzero.
 From the structured AiCall log over a development session (6 calls: 3 room
 asks, 1 catchup, 1 global ask, 1 decisions extraction), mock provider:
 
-| Metric                    | Value                                             |
-| ------------------------- | ------------------------------------------------- |
-| answer latency p50        | 54ms                                              |
-| answer latency p95        | 90ms                                              |
-| avg tokens per answer     | 543 in, 71 out                                    |
-| estimated cost per answer | $0 (mock); the script prices real models per call |
-| cache hit rate            | 0% (semantic cache lands in a later phase)        |
+| Metric                    | Value                                                                                                                                                                                                                                                           |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| answer latency p50        | 54ms                                                                                                                                                                                                                                                            |
+| answer latency p95        | 90ms                                                                                                                                                                                                                                                            |
+| avg tokens per answer     | 543 in, 71 out                                                                                                                                                                                                                                                  |
+| estimated cost per answer | $0 (mock); the script prices real models per call                                                                                                                                                                                                               |
+| cache hit rate            | 0% in this pre-cache log; the semantic cache now exists and `pnpm ai:metrics` reports hits and estimated cost saved. The cache leak test (tests/ai-cache.test.ts) proves an identical repeat serves from cache and any membership change misses by construction |
 
 Mock latency measures the pipeline (retrieval, packing, prompt assembly,
 logging) without provider time. Treat it as overhead floor, not answer time.

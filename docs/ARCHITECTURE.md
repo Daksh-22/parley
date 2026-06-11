@@ -120,3 +120,23 @@ Cost controls are layered so that no single user, room, or outage can run up a b
 - The semantic answer cache (Phase 13) serves repeat questions without a model call, inside the permission fingerprint.
 - The circuit breaker opens on provider error spikes, so retries cannot multiply spend during an outage.
 - Every call is logged with real token counts; pnpm ai:metrics turns the log into cost per answer at recorded provider prices, so the unit economics are observable rather than estimated.
+
+## The E2EE tension, stated honestly
+
+A memory product and end-to-end encryption pull in opposite directions: the server must read message content to embed it, retrieve it, and assemble prompts. Parley therefore is not E2EE, and says so, rather than implying privacy properties it does not have.
+
+What the design does provide: TLS in transit, per-room memory consent enforced server-side (the room switch), query-time permission scoping on every retrieval path, hashed credentials and tokens, and an AI layer that cannot act. What it deliberately does not claim: that the operator cannot read your messages. Any hosted chat product with server-side search has this property; most simply decline to mention it.
+
+A future design that narrows the gap, sketched: clients embed locally (small quantized embedding models run comfortably on laptops), upload only vectors and encrypted ciphertext, and the server indexes vectors it cannot invert into prose while storing ciphertext it cannot read. Retrieval stays server-side over vectors; answer generation moves client-side, decrypting only the sources the asker already has keys for. The costs are real: per-device model distribution, key management across a team, no server-side lexical leg (the hybrid retriever loses its exact-match half), and document parsing moves into the client. That is a different product with materially worse retrieval today. Until it is buildable without those regressions, the honest stance beats a false privacy claim: users can weigh a tradeoff that is written down; they cannot weigh one that is hidden.
+
+## The E2EE tension, stated honestly
+
+A memory product and end-to-end encryption pull in opposite directions, and pretending otherwise would be the worst kind of privacy claim. Parley's server must read message content to embed it, retrieve it, and assemble cited answers. With true E2EE the server holds only ciphertext, and every feature on this product's spine (ingestion, hybrid retrieval, Recall, Catch me up, the MCP tools) goes dark.
+
+The current stance:
+
+- Parley is transport-encrypted and at-rest-encrypted like any serious SaaS, but it is not end to end encrypted, and the docs say so plainly rather than implying otherwise with phrases like "encrypted chat".
+- The consent surface is the per-room memory switch: when a room's memory is off, nothing from it is embedded, retrieved, or sent to a model, enforced server-side at ingestion, retrieval, and every ask path.
+- The trust boundary is the server operator. For a team tool, that is the same boundary as the database itself; the AI layer does not widen it, because providers receive only what retrieval selected and quotas allow, and AiCall logs make every disclosure auditable.
+
+What a future client-side design could look like, sketched without promising it: clients hold room keys and run a local embedding model (the same family of small models used for on-device search), encrypting both the message and its vector with the room key before upload. The server stores ciphertext vectors and performs approximate search either over encrypted embeddings with property-preserving schemes (a real information-leak tradeoff that must be stated, since distance-preserving encryption leaks geometry) or by shipping the room's encrypted index to clients for local search in small rooms. Answer generation would then run against a local model or a user-keyed provider session, not a shared server key. Every step of that design trades capability, cost, or latency for confidentiality; the honest version of this product picks the readable-server design, says so, and gives each room an off switch, rather than wearing an E2EE label it cannot carry.

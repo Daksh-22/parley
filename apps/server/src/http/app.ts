@@ -12,6 +12,8 @@ import { authRouter } from './routes/auth.js';
 import { roomsRouter } from './routes/rooms.js';
 import { documentsRouter } from './routes/documents.js';
 import { memoryRouter } from './routes/memory.js';
+import { invitesRouter } from './routes/invites.js';
+import { statsRouter } from './routes/stats.js';
 
 export function createApp(): express.Express {
   const app = express();
@@ -44,6 +46,8 @@ export function createApp(): express.Express {
   app.use(authRouter);
   app.use(documentsRouter);
   app.use(memoryRouter);
+  app.use(invitesRouter);
+  app.use(statsRouter);
   app.use(roomsRouter);
 
   app.use((_req, res) => {

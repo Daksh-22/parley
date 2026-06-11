@@ -26,6 +26,8 @@ export function RoomSettings({ roomId, open, onClose }: Props) {
   const [documents, setDocuments] = useState<DocumentWire[]>([]);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -103,6 +105,47 @@ export function RoomSettings({ roomId, open, onClose }: Props) {
             />
           </button>
         </div>
+      </section>
+
+      <section className="border-b border-hairline p-4">
+        <div className="flex items-center justify-between pb-1">
+          <p className="eyebrow">Invite</p>
+          <button
+            onClick={() => {
+              setInviteError(null);
+              api
+                .createInvite(roomId)
+                .then(({ url }) => setInviteUrl(url))
+                .catch((err: unknown) =>
+                  setInviteError(
+                    err instanceof Error ? err.message : 'Could not create the invite',
+                  ),
+                );
+            }}
+            className="rounded-md border border-hairline px-2 py-1 text-[12px] text-text-primary transition-colors duration-120 hover:bg-row-hover"
+          >
+            Create invite link
+          </button>
+        </div>
+        {inviteError && (
+          <p role="alert" className="pt-1 text-[12px] text-danger">
+            {inviteError}
+          </p>
+        )}
+        {inviteUrl ? (
+          <div className="mt-1 rounded-md border border-hairline bg-ground p-2">
+            <p className="text-[11px] text-text-secondary">
+              Valid 72 hours, 20 uses. Anyone with it can join this room.
+            </p>
+            <code className="block font-mono text-[11px] break-all text-text-primary select-all">
+              {inviteUrl}
+            </code>
+          </div>
+        ) : (
+          <p className="pt-1 text-[12px] text-text-secondary">
+            Links expire and are revocable; this is how teammates arrive.
+          </p>
+        )}
       </section>
 
       <section className="p-4">

@@ -52,18 +52,28 @@ flowchart LR
 
 Messages persist to MongoDB, then a BullMQ worker batch-embeds them into Qdrant. A question runs both retrieval legs (vector and lexical) filtered by the asker's current room memberships, fuses them with reciprocal rank fusion, packs the strongest sources into a token budget, and streams a cited answer over the same socket layer that carries chat. The full decision log lives in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## Live stats
+
+A deployed instance feeds these badges from its public `GET /stats` endpoint (aggregate totals only, never content). Point them at your deployment:
+
+```markdown
+![messages](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fyour-server%2Fstats&query=%24.messagesStored&label=messages%20remembered)
+![answers](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fyour-server%2Fstats&query=%24.aiAnswersServed&label=answers%20served)
+```
+
 ## Measured numbers
 
 Every number comes from a script in this repo; rerun them yourself. Methods and caveats: [LOADTEST.md](docs/LOADTEST.md), [EVALS.md](docs/EVALS.md).
 
-| What                                             | Result             | Source                               |
-| ------------------------------------------------ | ------------------ | ------------------------------------ |
-| Concurrent websocket clients sustained           | 1,000              | `k6 run infra/loadtest/chat-load.js` |
-| Message delivery latency                         | p50 2ms, p95 19ms  | same run                             |
-| Retrieval recall@5 on the 30-question golden set | 96.7%              | `pnpm ai:eval`                       |
-| Retrieval MRR                                    | 0.859              | `pnpm ai:eval`                       |
-| AI pipeline overhead (without provider time)     | p50 54ms, p95 90ms | `pnpm ai:metrics`                    |
-| Integration tests, all green with zero API keys  | 58                 | `pnpm test`                          |
+| What                                                 | Result                 | Source                               |
+| ---------------------------------------------------- | ---------------------- | ------------------------------------ |
+| Concurrent websocket clients sustained               | 1,000                  | `k6 run infra/loadtest/chat-load.js` |
+| Message delivery latency                             | p50 2ms, p95 19ms      | same run                             |
+| Retrieval recall@5 on the 30-question golden set     | 96.7%                  | `pnpm ai:eval`                       |
+| Retrieval MRR                                        | 0.859                  | `pnpm ai:eval`                       |
+| AI pipeline overhead (without provider time)         | p50 54ms, p95 90ms     | `pnpm ai:metrics`                    |
+| Integration tests, all green with zero API keys      | 74                     | `pnpm test`                          |
+| Chaos: SIGKILL one of two instances mid-conversation | zero loss, 15ms resync | `pnpm chaos`                         |
 
 ## Security and privacy stance
 

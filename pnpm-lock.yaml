@@ -32,6 +32,12 @@ importers:
       puppeteer-core:
         specifier: ^25.1.0
         version: 25.1.0
+      socket.io-client:
+        specifier: ^4.8.1
+        version: 4.8.3
+      tsx:
+        specifier: ^4.19.2
+        version: 4.22.4
       typescript:
         specifier: ^5.7.3
         version: 5.9.3

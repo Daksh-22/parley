@@ -126,6 +126,15 @@ export const api = {
     }>('/tokens'),
   revokeToken: (id: string) =>
     request<{ revoked: true }>(`/tokens/${id}/revoke`, { method: 'POST' }),
+  getInvitePreview: (token: string) =>
+    request<{ valid: boolean; roomName?: string }>(`/invites/${token}`, { auth: false }),
+  redeemInvite: (token: string) =>
+    request<{ room: RoomWire }>(`/invites/${token}/redeem`, { method: 'POST' }),
+  createInvite: (roomId: string) =>
+    request<{ id: string; url: string; expiresAt: string; maxRedemptions: number }>(
+      `/rooms/${roomId}/invites`,
+      { method: 'POST', body: {} },
+    ),
 };
 
 /** Multipart upload; kept outside the JSON request helper. */

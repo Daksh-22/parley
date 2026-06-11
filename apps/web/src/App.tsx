@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './state/auth';
 import { AuthScreen } from './screens/AuthScreen';
 import { ChatScreen } from './screens/ChatScreen';
+import { InviteRedeemer, useInviteNotice } from './components/InviteGate';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -11,6 +12,7 @@ const queryClient = new QueryClient({
 
 function Shell() {
   const { status } = useAuth();
+  const inviteNotice = useInviteNotice();
 
   if (status === 'loading') {
     return (
@@ -24,7 +26,15 @@ function Shell() {
     );
   }
 
-  return status === 'signedIn' ? <ChatScreen /> : <AuthScreen />;
+  if (status === 'signedIn') {
+    return (
+      <>
+        <ChatScreen />
+        <InviteRedeemer />
+      </>
+    );
+  }
+  return <AuthScreen notice={inviteNotice} />;
 }
 
 export function App() {

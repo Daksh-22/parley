@@ -24,7 +24,7 @@ function validateField(name: keyof FieldErrors, value: string): string | undefin
   return undefined;
 }
 
-export function AuthScreen() {
+export function AuthScreen({ notice }: { notice?: string | null }) {
   const { login, register } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
   const [username, setUsername] = useState('');
@@ -79,6 +79,11 @@ export function AuthScreen() {
           <p className="mt-1 text-[13px] text-text-secondary">
             Chat apps store messages. Parley remembers them.
           </p>
+          {notice && (
+            <p className="mt-3 rounded-md border border-hairline bg-panel px-3 py-2 text-[13px] text-text-primary">
+              {notice}
+            </p>
+          )}
         </header>
 
         <div className="rounded-md border border-hairline bg-panel p-6">

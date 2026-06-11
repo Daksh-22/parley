@@ -26,6 +26,7 @@ export const roomWireSchema = z.object({
   isDM: z.boolean(),
   isMember: z.boolean(),
   unreadCount: z.number().int().min(0),
+  aiEnabled: z.boolean(),
 });
 export type RoomWire = z.infer<typeof roomWireSchema>;
 

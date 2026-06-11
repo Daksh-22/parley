@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "ai:backfill": "tsx src/ai/ingest/backfill.ts"
+    "ai:backfill": "tsx src/ai/ingest/backfill.ts",
+    "seed:demo": "tsx src/seed-demo.ts",
+    "ai:export-feedback": "tsx src/ai/export-feedback.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",

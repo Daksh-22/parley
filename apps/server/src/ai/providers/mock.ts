@@ -85,17 +85,45 @@ export class MockLLMClient implements LLMClient {
     request: CompletionRequest,
     schema: S,
   ): Promise<{ data: z.output<S>; usage: CompletionUsage }> {
-    // Deterministic structured output: tests seed the expected shape through
-    // a JSON block in the prompt when they need specific content; otherwise
-    // an empty-but-valid object is synthesized from the schema.
+    // Deterministic structured output, in priority order: a seeded JSON block
+    // (tests), then a decision-extraction heuristic over id-annotated source
+    // lines (so the Decisions surface demos with zero keys), then an
+    // empty-but-valid object.
     const prompt = request.messages.map((m) => m.content).join('\n');
     const seeded = /MOCK_STRUCTURED:(\{.*\})/s.exec(prompt);
-    const candidate: unknown = seeded?.[1] ? JSON.parse(seeded[1]) : { decisions: [] };
+    const candidate: unknown = seeded?.[1]
+      ? JSON.parse(seeded[1])
+      : { decisions: this.extractMockDecisions(prompt) };
     const data = schema.parse(candidate) as z.output<S>;
     return Promise.resolve({
       data,
       usage: this.usage(request, JSON.stringify(candidate)),
     });
+  }
+
+  private extractMockDecisions(prompt: string): {
+    decision: string;
+    decidedBy: string;
+    date: string;
+    sourceMessageIds: string[];
+  }[] {
+    const decisions = [];
+    const linePattern = /^\[id:([a-f0-9]{24})\]\s+(\S+)\s+\|\s+([^:]+):\s+(.+)$/gm;
+    for (const match of prompt.matchAll(linePattern)) {
+      const [, id, date, sender, text] = match;
+      if (!id || !date || !sender || !text) continue;
+      if (
+        /\b(decided|decision|agreed|approved|we are going with|shipping on|locked)\b/i.test(text)
+      ) {
+        decisions.push({
+          decision: text.slice(0, 160),
+          decidedBy: sender.trim(),
+          date,
+          sourceMessageIds: [id],
+        });
+      }
+    }
+    return decisions.slice(0, 10);
   }
 
   rerank(query: string, candidates: string[], topK: number): Promise<number[]> {

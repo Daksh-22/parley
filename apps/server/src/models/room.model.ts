@@ -5,6 +5,9 @@ export interface RoomFields {
   slug: string;
   isDM: boolean;
   creatorId: Types.ObjectId | null;
+  // Per-room memory switch. When false, nothing from this room is embedded,
+  // retrieved, or sent to a model.
+  aiEnabled: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -18,6 +21,7 @@ const roomSchema = new Schema<RoomFields>(
     isDM: { type: Boolean, default: false },
     // null for system-seeded rooms such as #general.
     creatorId: { type: Schema.Types.ObjectId, ref: 'User', default: null },
+    aiEnabled: { type: Boolean, default: true },
   },
   { timestamps: true },
 );

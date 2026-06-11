@@ -1,10 +1,25 @@
-import { aiAskPayloadSchema, aiFeedbackPayloadSchema } from '@parley/shared';
+import {
+  aiAskPayloadSchema,
+  aiCatchupPayloadSchema,
+  aiDecisionsPayloadSchema,
+  aiFeedbackPayloadSchema,
+} from '@parley/shared';
 import { WsError } from '../lib/errors.js';
 import { AiCall } from '../models/ai-call.model.js';
+import { Membership } from '../models/membership.model.js';
 import { preflight, startAsk, roomEmitter, type StreamEmitter } from '../ai/ask.js';
-import { getUserRoomIds } from '../ai/retrieval.js';
+import { startCatchup, extractDecisions } from '../ai/digest.js';
+import { roomAiEnabled } from '../ai/room-gate.js';
 import { wrapHandler } from './ack.js';
 import type { AppServer, AppSocket } from './types.js';
+
+async function requireAiRoom(userId: string, roomId: string): Promise<void> {
+  const isMember = await Membership.exists({ userId, roomId });
+  if (!isMember) throw new WsError('FORBIDDEN', 'You are not a member of this room');
+  if (!(await roomAiEnabled(roomId))) {
+    throw new WsError('AI_DISABLED_ROOM', 'Memory is off in this room');
+  }
+}
 
 function socketEmitter(socket: AppSocket): StreamEmitter {
   return {
@@ -24,12 +39,9 @@ export function registerAiHandlers(_io: AppServer, socket: AppSocket): void {
       await preflight(userId);
 
       if (payload.scope === 'room') {
-        // Membership is verified here, at ask time. The retrieval pipeline
-        // checks again; defense in depth costs one indexed query.
-        const roomIds = await getUserRoomIds(userId, payload.roomId);
-        if (roomIds.length === 0) {
-          throw new WsError('FORBIDDEN', 'You are not a member of this room');
-        }
+        // Membership and the room memory gate, verified at ask time. The
+        // retrieval pipeline checks both again; defense in depth.
+        await requireAiRoom(userId, payload.roomId);
         const streamId = startAsk({
           userId,
           question: payload.question,
@@ -50,6 +62,40 @@ export function registerAiHandlers(_io: AppServer, socket: AppSocket): void {
         emitter: socketEmitter(socket),
       });
       return { streamId };
+    }),
+  );
+
+  socket.on(
+    'ai:catchup',
+    wrapHandler(
+      socket,
+      'ai:catchup',
+      aiCatchupPayloadSchema,
+      async ({ roomId, sinceMessageId }) => {
+        await preflight(userId);
+        await requireAiRoom(userId, roomId);
+        // Private to the asker: the digest reflects their personal read cursor.
+        const streamId = startCatchup({
+          userId,
+          roomId,
+          sinceMessageId,
+          emitter: socketEmitter(socket),
+        });
+        return { streamId };
+      },
+    ),
+  );
+
+  socket.on(
+    'ai:decisions',
+    wrapHandler(socket, 'ai:decisions', aiDecisionsPayloadSchema, async ({ roomId }) => {
+      await preflight(userId);
+      await requireAiRoom(userId, roomId);
+      try {
+        return await extractDecisions(userId, roomId);
+      } catch {
+        throw new WsError('AI_FAILED', 'Recall could not extract decisions. Try again');
+      }
     }),
   );
 

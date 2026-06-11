@@ -33,6 +33,7 @@ export async function toRoomWire(
     slug: room.slug,
     isDM: room.isDM,
     isMember: member !== null,
+    aiEnabled: room.aiEnabled ?? true,
     unreadCount: member
       ? await unreadCountFor(userId, roomId, member.lastReadMessageId?.toHexString() ?? null)
       : 0,

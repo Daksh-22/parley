@@ -194,6 +194,15 @@ width. Lighthouse accessibility after the pass: auth 100, chat 100
 6. The command palette did not exist at the time of this pass (it is a
    Phase 10 surface); its capture and critique are appended after Phase 10.
 
+Phase 10 addendum: the palette was captured live over the seeded workspace
+(560px, top third, hairline plus the single overlay shadow, mono eyebrows,
+36px rows, right-aligned mono hints, suggestion chips that resolve against
+seed data). One product flow defect found and fixed during the pass: opening
+a room advanced the read cursor before the Catch me up pill could read it,
+which both hid the pill and emptied the digest. The unread window is now
+captured at room open and the digest boundary travels with the request.
+Lighthouse after the pass: auth 100, chat 100.
+
 ## Craft checklist (enforced at the design gate)
 
 - No Tailwind default blue, indigo, or violet anywhere.

@@ -122,6 +122,23 @@ roomsRouter.post('/rooms', async (req, res) => {
   res.status(201).json({ room: await toRoomWire(room, userId) });
 });
 
+const settingsBodySchema = z.object({ aiEnabled: z.boolean() });
+
+// PATCH /rooms/:id/settings: the per-room memory switch. Any member may flip
+// it; the product stance is documented in docs/PRODUCT.md.
+roomsRouter.patch('/rooms/:id/settings', async (req, res) => {
+  const userId = req.userId as string;
+  const roomId = req.params.id as string;
+  await requireMembership(userId, roomId);
+  const { aiEnabled } = parseOrThrow(settingsBodySchema, req.body);
+
+  const room = await Room.findByIdAndUpdate(roomId, { aiEnabled }, { new: true });
+  if (!room) throw new HttpError(404, 'NOT_FOUND', 'Room not found');
+  const { invalidateRoomGate } = await import('../../ai/room-gate.js');
+  invalidateRoomGate(roomId);
+  res.json({ room: await toRoomWire(room, userId) });
+});
+
 // GET /rooms/:id/messages: cursor-paginated history, newest first.
 roomsRouter.get('/rooms/:id/messages', async (req, res) => {
   const userId = req.userId as string;

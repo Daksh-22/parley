@@ -8,6 +8,7 @@ import { embedBatched } from './batcher.js';
 import { chunkDocument } from './chunker.js';
 import { pointId, upsertVectors, type VectorPayload } from '../vector-store.js';
 import { getAiIo } from '../events.js';
+import { roomAiEnabled } from '../room-gate.js';
 
 // The queue name is namespaced by collection so a dev server and a test run
 // sharing one Redis can never steal each other's jobs: a worker bound to
@@ -78,6 +79,7 @@ export async function processMessageJob(messageId: string): Promise<void> {
   // question retrieve itself as the top source for its own answer.
   if (!message || message.kind !== 'user') return;
   if (message.body.startsWith('@recall ')) return;
+  if (!(await roomAiEnabled(message.roomId.toHexString()))) return;
   const vector = await embedBatched(message.body);
   const payload: VectorPayload = {
     kind: 'message',

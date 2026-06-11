@@ -3,6 +3,7 @@ import type {
   Ack,
   Citation,
   ClientToServerEvents,
+  DecisionsResult,
   MessageWire,
   PublicUser,
   RoomWire,
@@ -32,6 +33,9 @@ export interface RoomState {
   // userId -> lastReadMessageId, for read receipts and own-message status.
   readCursors: Map<string, string>;
   typing: Map<string, number>; // userId -> expiry epoch ms
+  // Catch me up window, captured at room open before the cursor advances.
+  catchupAvailable: number;
+  catchupSinceId: string | null;
 }
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'offline';
@@ -321,6 +325,42 @@ export function clearJumpTarget(): void {
   emitChange();
 }
 
+// ---------------------------------------------------------------------------
+// AI surface actions
+// ---------------------------------------------------------------------------
+
+export function askGlobal(question: string): Promise<Ack<{ streamId: string }>> {
+  return emitWithAck<{ streamId: string }>('ai:ask', { scope: 'global', question });
+}
+
+export function requestCatchup(roomId: string): Promise<Ack<{ streamId: string }>> {
+  const r = room(roomId);
+  return emitWithAck<{ streamId: string }>('ai:catchup', {
+    roomId,
+    ...(r?.catchupSinceId ? { sinceMessageId: r.catchupSinceId } : {}),
+  });
+}
+
+export function requestDecisions(roomId: string): Promise<Ack<DecisionsResult>> {
+  return emitWithAck<DecisionsResult>('ai:decisions', { roomId });
+}
+
+export function sendAiFeedback(
+  streamId: string,
+  verdict: 'up' | 'down',
+): Promise<Ack<{ recorded: true }>> {
+  return emitWithAck<{ recorded: true }>('ai:feedback', { streamId, verdict });
+}
+
+export async function setRoomAi(roomId: string, aiEnabled: boolean): Promise<void> {
+  const { room: wire } = await api.patchRoomSettings(roomId, aiEnabled);
+  const r = room(roomId);
+  if (r) {
+    r.room = wire;
+    emitChange();
+  }
+}
+
 export function disconnect(): void {
   socket?.disconnect();
   socket = null;
@@ -343,7 +383,16 @@ export function disconnect(): void {
 // ---------------------------------------------------------------------------
 
 function emitWithAck<T>(
-  event: 'room:join' | 'room:leave' | 'message:send' | 'room:read' | 'sync:since',
+  event:
+    | 'room:join'
+    | 'room:leave'
+    | 'message:send'
+    | 'room:read'
+    | 'sync:since'
+    | 'ai:ask'
+    | 'ai:catchup'
+    | 'ai:decisions'
+    | 'ai:feedback',
   payload: unknown,
 ): Promise<Ack<T>> {
   return new Promise((resolve) => {
@@ -435,6 +484,8 @@ export async function loadRooms(): Promise<void> {
         members: new Map(),
         readCursors: new Map(),
         typing: new Map(),
+        catchupAvailable: 0,
+        catchupSinceId: null,
       });
     }
   }
@@ -480,10 +531,28 @@ export async function openRoom(roomId: string): Promise<void> {
     }
   }
 
+  // Capture the catch-up window before anything moves the read cursor: the
+  // unread count at entry and the boundary message the digest starts from.
+  const unreadAtOpen = r.room.unreadCount;
+
   if (!r.historyLoaded) {
     await Promise.all([loadOlderMessages(roomId), loadMembers(roomId)]);
   }
+
+  if (unreadAtOpen >= 10 && r.catchupAvailable === 0) {
+    r.catchupAvailable = unreadAtOpen;
+    r.catchupSinceId = me ? (r.readCursors.get(me.id) ?? null) : null;
+    emitChange();
+  }
   markRoomRead(roomId);
+}
+
+export function clearCatchup(roomId: string): void {
+  const r = room(roomId);
+  if (!r || r.catchupAvailable === 0) return;
+  r.catchupAvailable = 0;
+  r.catchupSinceId = null;
+  emitChange();
 }
 
 export async function loadMembers(roomId: string): Promise<void> {

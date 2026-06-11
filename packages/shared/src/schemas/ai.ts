@@ -31,7 +31,12 @@ export const aiAskPayloadSchema = z.discriminatedUnion('scope', [
 ]);
 export type AiAskPayload = z.infer<typeof aiAskPayloadSchema>;
 
-export const aiCatchupPayloadSchema = z.object({ roomId: objectIdSchema });
+export const aiCatchupPayloadSchema = z.object({
+  roomId: objectIdSchema,
+  // The read boundary captured when the room was opened, before the open
+  // itself advanced the live cursor. Server falls back to the stored cursor.
+  sinceMessageId: objectIdSchema.optional(),
+});
 export type AiCatchupPayload = z.infer<typeof aiCatchupPayloadSchema>;
 
 export const aiDecisionsPayloadSchema = z.object({ roomId: objectIdSchema });

@@ -17,6 +17,7 @@ import {
 import { dayLabel, exactTime, relativeTime, sameDay, timeOfDay } from '../lib/format';
 import { Avatar } from './Avatar';
 import { AiMarkdown } from './AiMarkdown';
+import { FeedbackThumbs } from './FeedbackThumbs';
 
 const GROUP_WINDOW_MS = 3 * 60 * 1000;
 // Virtuoso needs a decreasing firstItemIndex when older items are prepended.
@@ -155,6 +156,7 @@ function AiAnswer({
   citations,
   streaming,
   errorMessage,
+  streamId,
 }: {
   question: string;
   askedBy: string;
@@ -162,14 +164,16 @@ function AiAnswer({
   citations?: Citation[];
   streaming?: boolean;
   errorMessage?: string;
+  streamId?: string;
 }) {
   return (
     <div className="my-1 border-l-2 border-accent-ink py-1 pl-3">
       <p className="flex flex-wrap items-baseline gap-x-2">
         <span className="font-display text-[15px] italic text-accent-ink">Recall</span>
-        <span className="text-[12px] text-text-secondary">
+        <span className="min-w-0 text-[12px] text-text-secondary">
           {askedBy} asked: {question}
         </span>
+        {!streaming && streamId && <FeedbackThumbs streamId={streamId} />}
       </p>
       <div className={`mt-1 min-h-[22px] ${streaming ? 'stream-caret' : ''}`}>
         {errorMessage ? (
@@ -208,6 +212,9 @@ const MessageRow = memo(function MessageRow({
           askedBy={message.sender.displayName}
           body={message.body}
           citations={message.citations}
+          streamId={
+            message.clientMsgId.startsWith('ai-') ? message.clientMsgId.slice(3) : undefined
+          }
         />
       </div>
     );

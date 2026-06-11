@@ -14,6 +14,7 @@ import { logger } from '../lib/logger.js';
 import { env } from '../config/env.js';
 import { enqueueMessageEmbed } from '../ai/ingest/queue.js';
 import { preflight, roomEmitter, startAsk } from '../ai/ask.js';
+import { roomAiEnabled } from '../ai/room-gate.js';
 import { Room } from '../models/room.model.js';
 import { Membership } from '../models/membership.model.js';
 import { Message, type MessageDoc } from '../models/message.model.js';
@@ -144,7 +145,11 @@ export function registerHandlers(io: AppServer, socket: AppSocket): void {
       if (env.AI_ENABLED && payload.body.startsWith('@recall ')) {
         const question = payload.body.slice('@recall '.length).trim();
         if (question.length >= 3 && question.length <= 600) {
-          preflight(userId)
+          roomAiEnabled(payload.roomId)
+            .then((enabled) => {
+              if (!enabled) throw new WsError('AI_DISABLED_ROOM', 'Memory is off in this room');
+              return preflight(userId);
+            })
             .then(() => {
               startAsk({
                 userId,

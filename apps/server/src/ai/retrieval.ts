@@ -4,6 +4,7 @@ import { env } from '../config/env.js';
 import { getEmbedder } from './provider.js';
 import { searchVectors } from './vector-store.js';
 import { approxTokens } from './tokens.js';
+import { filterAiEnabledRooms } from './room-gate.js';
 
 // Hybrid retrieval: a vector leg (Qdrant) and a lexical leg (Mongo text
 // index), fused with reciprocal rank fusion. Both legs are filtered by the
@@ -36,8 +37,9 @@ export interface RetrievedSource {
 export async function getUserRoomIds(userId: string, restrictToRoom?: string): Promise<string[]> {
   const memberships = await Membership.find({ userId }).select('roomId');
   const ids = memberships.map((m) => m.roomId.toHexString());
-  if (restrictToRoom) return ids.includes(restrictToRoom) ? [restrictToRoom] : [];
-  return ids;
+  const scoped = restrictToRoom ? (ids.includes(restrictToRoom) ? [restrictToRoom] : []) : ids;
+  // Rooms with memory switched off contribute nothing to any retrieval.
+  return filterAiEnabledRooms(scoped);
 }
 
 export async function hybridRetrieve(

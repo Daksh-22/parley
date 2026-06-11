@@ -1,5 +1,6 @@
 import type {
   AuthResponse,
+  DocumentWire,
   LoginRequest,
   MemberWire,
   MessageWire,
@@ -29,7 +30,7 @@ export const setAccessToken = (token: string | null): void => {
 };
 
 interface RequestOptions {
-  method?: 'GET' | 'POST';
+  method?: 'GET' | 'POST' | 'PATCH';
   body?: unknown;
   auth?: boolean;
   retryOn401?: boolean;
@@ -101,4 +102,38 @@ export const api = {
     request<{ members: MemberWire[]; nextCursor: string | null }>(
       `/rooms/${roomId}/members?limit=100`,
     ),
+  patchRoomSettings: (roomId: string, aiEnabled: boolean) =>
+    request<{ room: RoomWire }>(`/rooms/${roomId}/settings`, {
+      method: 'PATCH',
+      body: { aiEnabled },
+    }),
+  listDocuments: (roomId: string) =>
+    request<{ documents: DocumentWire[]; nextCursor: string | null }>(`/rooms/${roomId}/documents`),
 };
+
+/** Multipart upload; kept outside the JSON request helper. */
+export async function uploadDocument(roomId: string, file: File): Promise<DocumentWire> {
+  const form = new FormData();
+  form.append('file', file);
+  const send = () =>
+    fetch(`${API_URL}/rooms/${roomId}/documents`, {
+      method: 'POST',
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      body: form,
+      credentials: 'include',
+    });
+  let res = await send();
+  if (res.status === 401 && (await tryRefresh())) res = await send();
+  if (!res.ok) {
+    const payload = (await res.json().catch(() => null)) as {
+      error?: { code?: string; message?: string };
+    } | null;
+    throw new ApiError(
+      res.status,
+      payload?.error?.code ?? 'UNKNOWN',
+      payload?.error?.message ?? 'Upload failed',
+    );
+  }
+  const data = (await res.json()) as { document: DocumentWire };
+  return data.document;
+}

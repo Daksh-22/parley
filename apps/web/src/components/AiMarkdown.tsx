@@ -33,16 +33,38 @@ function renderInline(
       const citation = citations?.find((c) => c.index === n);
       if (citation) {
         nodes.push(
-          // Signature wash, place one of five: citation chips.
-          <button
-            key={key}
-            onClick={() => onCitationClick?.(citation)}
-            title={citation.snippet}
-            aria-label={`Source ${n}: ${citation.snippet.slice(0, 80)}`}
-            className="tabular mx-px inline-flex -translate-y-[3px] items-center rounded-full bg-wash px-1.5 font-mono text-[10px] font-medium text-text-primary transition-opacity duration-120 hover:opacity-80"
-          >
-            {n}
-          </button>,
+          // Signature wash, place one of five: citation chips. Hover or
+          // focus reveals a source preview; click jumps to the source.
+          <span key={key} className="group/chip relative inline-block">
+            <button
+              onClick={() => onCitationClick?.(citation)}
+              aria-label={`Source ${n}: ${citation.snippet.slice(0, 80)}`}
+              className="tabular mx-px inline-flex -translate-y-[3px] items-center rounded-full bg-wash px-1.5 font-mono text-[10px] font-medium text-text-primary transition-opacity duration-120 hover:opacity-80"
+            >
+              {n}
+            </button>
+            <span
+              role="tooltip"
+              className="pointer-events-none invisible absolute bottom-full left-1/2 z-30 mb-1.5 w-[260px] -translate-x-1/2 rounded-lg border border-hairline bg-panel p-2.5 text-left opacity-0 shadow-overlay transition-opacity duration-120 group-focus-within/chip:visible group-focus-within/chip:opacity-100 group-hover/chip:visible group-hover/chip:opacity-100"
+            >
+              <span className="block text-[12px] font-semibold text-text-primary">
+                {citation.senderName ?? 'document'}
+                {citation.page !== undefined && (
+                  <span className="ml-1 font-mono text-[10px] font-normal text-text-secondary">
+                    p.{citation.page}
+                  </span>
+                )}
+              </span>
+              {citation.createdAt && (
+                <span className="tabular block font-mono text-[10px] text-text-secondary">
+                  {citation.createdAt.slice(0, 10)} {citation.createdAt.slice(11, 16)}
+                </span>
+              )}
+              <span className="mt-1 block text-[12px] leading-snug text-text-primary">
+                {citation.snippet}
+              </span>
+            </span>
+          </span>,
         );
       } else {
         nodes.push(token);

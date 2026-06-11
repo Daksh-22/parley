@@ -329,8 +329,15 @@ export function clearJumpTarget(): void {
 // AI surface actions
 // ---------------------------------------------------------------------------
 
-export function askGlobal(question: string): Promise<Ack<{ streamId: string }>> {
-  return emitWithAck<{ streamId: string }>('ai:ask', { scope: 'global', question });
+export function askGlobal(
+  question: string,
+  options: { bypassCache?: boolean } = {},
+): Promise<Ack<{ streamId: string }>> {
+  return emitWithAck<{ streamId: string }>('ai:ask', {
+    scope: 'global',
+    question,
+    ...(options.bypassCache ? { bypassCache: true } : {}),
+  });
 }
 
 export function requestCatchup(roomId: string): Promise<Ack<{ streamId: string }>> {

@@ -32,7 +32,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['apps/server/**/*.ts', 'packages/shared/**/*.ts'],
+    files: ['apps/server/**/*.ts', 'apps/mcp/**/*.ts', 'packages/shared/**/*.ts'],
     languageOptions: {
       globals: { ...globals.node },
     },

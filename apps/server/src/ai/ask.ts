@@ -7,7 +7,8 @@ import { WsError } from '../lib/errors.js';
 import { Message } from '../models/message.model.js';
 import { AiCall } from '../models/ai-call.model.js';
 import { getLLM } from './provider.js';
-import { getUserRoomIds, hybridRetrieve, packToBudget } from './retrieval.js';
+import { getUserRoomIds, hybridRetrieve, packToBudget, rerankSources } from './retrieval.js';
+import { cacheLookup, cacheStore, permissionFingerprint } from './cache.js';
 import { buildAnswerPrompt, extractCitations } from './answer.js';
 import { quotaRemaining, recordTokenUsage } from './quota.js';
 import { breakerOpen, recordProviderFailure, recordProviderSuccess } from './breaker.js';
@@ -51,6 +52,8 @@ export interface AskOptions {
   scope: 'room' | 'global';
   roomId?: string;
   persistToRoom: boolean;
+  // Regenerate action: skip the semantic cache but still refresh it.
+  bypassCache?: boolean;
   emitter: StreamEmitter;
 }
 
@@ -104,7 +107,36 @@ async function executeAsk(streamId: string, options: AskOptions): Promise<void> 
     askedBy: asker?.displayName ?? 'someone',
   });
 
-  const sources = packToBudget(await hybridRetrieve(question, roomIds));
+  // Semantic cache, global asks only: room asks persist shared messages and
+  // always run fresh. The fingerprint bakes in the permission set, so any
+  // membership or room-memory change misses by construction.
+  const fingerprint = permissionFingerprint(roomIds, 'global');
+  if (scope === 'global' && !options.bypassCache) {
+    const cached = await cacheLookup(fingerprint, question);
+    if (cached) {
+      await logCall({
+        streamId,
+        userId,
+        kind: 'global-ask',
+        question,
+        answer: cached.answer,
+        sourceKeys: [],
+        retrievalHits: cached.citations.length,
+        tokensIn: cached.tokensIn,
+        tokensOut: cached.tokensOut,
+        latencyMs: Date.now() - startedAt,
+        ok: true,
+        errorCode: null,
+        cached: true,
+      });
+      emitter.done({ streamId, answer: cached.answer, citations: cached.citations, cached: true });
+      return;
+    }
+  }
+
+  let retrieved = await hybridRetrieve(question, roomIds, env.RERANK_ENABLED ? 20 : 12);
+  if (env.RERANK_ENABLED) retrieved = await rerankSources(question, retrieved, 6);
+  const sources = packToBudget(retrieved);
   const prompt = await buildAnswerPrompt(question, sources);
 
   const controller = new AbortController();
@@ -144,6 +176,16 @@ async function executeAsk(streamId: string, options: AskOptions): Promise<void> 
     }
 
     await recordTokenUsage(userId, result.usage.inputTokens + result.usage.outputTokens);
+    if (scope === 'global') {
+      await cacheStore(fingerprint, question, {
+        question,
+        answer: result.text,
+        citations,
+        tokensIn: result.usage.inputTokens,
+        tokensOut: result.usage.outputTokens,
+        createdAt: new Date().toISOString(),
+      });
+    }
     await logCall({
       streamId,
       userId,
@@ -157,6 +199,7 @@ async function executeAsk(streamId: string, options: AskOptions): Promise<void> 
       latencyMs: Date.now() - startedAt,
       ok: true,
       errorCode: null,
+      cached: false,
     });
 
     emitter.done({ streamId, answer: result.text, citations, cached: false, messageId });
@@ -177,6 +220,7 @@ async function executeAsk(streamId: string, options: AskOptions): Promise<void> 
       latencyMs: Date.now() - startedAt,
       ok: false,
       errorCode: timedOut ? 'AI_TIMEOUT' : 'AI_FAILED',
+      cached: false,
     });
     logger.error({ err, streamId, timedOut }, 'ai answer failed');
     emitter.error({
@@ -202,10 +246,11 @@ async function logCall(fields: {
   latencyMs: number;
   ok: boolean;
   errorCode: string | null;
+  cached: boolean;
 }): Promise<void> {
   try {
     const llm = getLLM();
-    await AiCall.create({ ...fields, provider: llm.provider, model: llm.model, cached: false });
+    await AiCall.create({ ...fields, provider: llm.provider, model: llm.model });
     logger.info(
       {
         streamId: fields.streamId,

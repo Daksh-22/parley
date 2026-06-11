@@ -86,6 +86,27 @@ cp .env.example .env && pnpm seed:demo && pnpm dev
 
 Open http://localhost:5173, sign in as `demo / demo-password-1`, open `#launch-week`, and click the Catch me up pill. Ask the suggested questions with cmd+k; click any citation and watch the jump. The default config uses the deterministic mock provider, no keys needed. Real providers: set `AI_CHAT_PROVIDER=anthropic` with `ANTHROPIC_API_KEY`, or `openai` for both chat and embeddings.
 
+## Use your team's memory from Claude Desktop or Cursor
+
+Parley ships an MCP server (`apps/mcp`) exposing three read-only tools: `search_memory`, `ask_memory`, and `catch_me_up`. They authenticate with a personal access token (create one from the key icon in the sidebar footer) and enforce the exact same query-time permission filters as the app: your token sees precisely the rooms you see, and revoking it or leaving a room takes effect on the next request.
+
+```json
+{
+  "mcpServers": {
+    "parley-memory": {
+      "command": "pnpm",
+      "args": ["--dir", "/path/to/parley/apps/mcp", "start"],
+      "env": {
+        "PARLEY_URL": "http://localhost:4000",
+        "PARLEY_TOKEN": "pat_your_token_here"
+      }
+    }
+  }
+}
+```
+
+Then ask Claude things like "search our team memory for the checkout outage root cause" or "catch me up on launch-week".
+
 ## Roadmap
 
 - Real-provider eval baseline and the rerank decision it justifies

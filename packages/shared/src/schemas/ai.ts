@@ -27,7 +27,12 @@ export const aiQuestionSchema = z.string().trim().min(3).max(600);
 
 export const aiAskPayloadSchema = z.discriminatedUnion('scope', [
   z.object({ scope: z.literal('room'), roomId: objectIdSchema, question: aiQuestionSchema }),
-  z.object({ scope: z.literal('global'), question: aiQuestionSchema }),
+  z.object({
+    scope: z.literal('global'),
+    question: aiQuestionSchema,
+    // Regenerate: skip the semantic cache, then refresh it.
+    bypassCache: z.boolean().optional(),
+  }),
 ]);
 export type AiAskPayload = z.infer<typeof aiAskPayloadSchema>;
 

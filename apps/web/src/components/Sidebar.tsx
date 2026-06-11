@@ -5,6 +5,7 @@ import { useChatState } from '../state/use-chat';
 import { createRoom, openRoom, getMe } from '../state/chat-store';
 import { Avatar } from './Avatar';
 import { ThemeToggle } from './ThemeToggle';
+import { UserSettings } from './UserSettings';
 
 function RoomRow({ roomId }: { roomId: string }) {
   const roomState = useChatState((s) => s.rooms.get(roomId));
@@ -122,7 +123,7 @@ export function Sidebar() {
       </ul>
 
       {user && (
-        <footer className="flex items-center gap-2 border-t border-hairline p-3">
+        <footer className="relative flex items-center gap-2 border-t border-hairline p-3">
           <Avatar
             seed={user.avatarSeed}
             name={user.displayName}
@@ -135,6 +136,7 @@ export function Sidebar() {
             </p>
             <p className="truncate font-mono text-[11px] text-text-secondary">@{user.username}</p>
           </div>
+          <UserSettings />
           <ThemeToggle />
           <button
             onClick={() => void logout()}

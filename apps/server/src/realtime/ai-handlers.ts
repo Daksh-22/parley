@@ -59,6 +59,7 @@ export function registerAiHandlers(_io: AppServer, socket: AppSocket): void {
         question: payload.question,
         scope: 'global',
         persistToRoom: false,
+        bypassCache: payload.bypassCache,
         emitter: socketEmitter(socket),
       });
       return { streamId };

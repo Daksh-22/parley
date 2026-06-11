@@ -109,6 +109,23 @@ export const api = {
     }),
   listDocuments: (roomId: string) =>
     request<{ documents: DocumentWire[]; nextCursor: string | null }>(`/rooms/${roomId}/documents`),
+  createToken: (name: string) =>
+    request<{ token: string; id: string; name: string; createdAt: string }>('/tokens', {
+      method: 'POST',
+      body: { name },
+    }),
+  listTokens: () =>
+    request<{
+      tokens: {
+        id: string;
+        name: string;
+        createdAt: string;
+        lastUsedAt: string | null;
+        revoked: boolean;
+      }[];
+    }>('/tokens'),
+  revokeToken: (id: string) =>
+    request<{ revoked: true }>(`/tokens/${id}/revoke`, { method: 'POST' }),
 };
 
 /** Multipart upload; kept outside the JSON request helper. */

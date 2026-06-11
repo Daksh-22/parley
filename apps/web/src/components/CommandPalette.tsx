@@ -55,10 +55,10 @@ export function CommandPalette({ open, onClose }: Props) {
         .slice(0, 4)
     : [];
 
-  async function ask(question: string): Promise<void> {
+  async function ask(question: string, bypassCache = false): Promise<void> {
     setAskError(null);
     if (streamId) dismissAiStream(streamId);
-    const ack = await askGlobal(question);
+    const ack = await askGlobal(question, { bypassCache });
     if (ack.ok) {
       setStreamId(ack.data.streamId);
     } else {
@@ -232,6 +232,19 @@ export function CommandPalette({ open, onClose }: Props) {
                       {stream.citations.length}{' '}
                       {stream.citations.length === 1 ? 'source' : 'sources'}
                     </span>
+                  )}
+                  {stream.cached && (
+                    <>
+                      <span className="font-mono text-[11px] text-text-secondary uppercase">
+                        cached
+                      </span>
+                      <button
+                        onClick={() => void ask(stream.question, true)}
+                        className="rounded-md border border-hairline px-2 py-0.5 text-[12px] text-text-primary transition-colors duration-120 hover:bg-row-hover"
+                      >
+                        Regenerate
+                      </button>
+                    </>
                   )}
                   {activeRoomName && (
                     <button

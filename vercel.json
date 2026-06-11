@@ -1,0 +1,9 @@
+{
+  "buildCommand": "pnpm build --filter @parley/web",
+  "installCommand": "pnpm install",
+  "outputDirectory": "apps/web/dist",
+  "framework": "vite",
+  "env": {
+    "VITE_API_URL": "@vite_api_url"
+  }
+}

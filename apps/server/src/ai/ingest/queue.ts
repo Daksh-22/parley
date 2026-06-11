@@ -9,7 +9,10 @@ import { chunkDocument } from './chunker.js';
 import { pointId, upsertVectors, type VectorPayload } from '../vector-store.js';
 import { getAiIo } from '../events.js';
 
-const QUEUE_NAME = 'ai-ingest';
+// The queue name is namespaced by collection so a dev server and a test run
+// sharing one Redis can never steal each other's jobs: a worker bound to
+// another Mongo database would complete them as silent no-ops.
+const QUEUE_NAME = `ai-ingest-${env.QDRANT_COLLECTION}`;
 export const DLQ_KEY = 'ai:dlq';
 
 type IngestJob = { kind: 'message'; messageId: string } | { kind: 'doc'; docId: string };
@@ -70,8 +73,11 @@ export async function enqueueDocIngest(docId: string): Promise<void> {
 export async function processMessageJob(messageId: string): Promise<void> {
   const message = await Message.findById(messageId);
   // Deleted, or AI-generated: AI messages are never ingested, preventing
-  // the model from retrieving and amplifying its own output.
+  // the model from retrieving and amplifying its own output. The @recall
+  // trigger itself is a command, not knowledge: ingesting it would make a
+  // question retrieve itself as the top source for its own answer.
   if (!message || message.kind !== 'user') return;
+  if (message.body.startsWith('@recall ')) return;
   const vector = await embedBatched(message.body);
   const payload: VectorPayload = {
     kind: 'message',

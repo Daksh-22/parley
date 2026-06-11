@@ -19,14 +19,18 @@ async function main(): Promise<void> {
   await connectRedis();
   await ensureCollection();
 
-  const total = await Message.countDocuments({ kind: 'user' });
+  // $ne matches documents created before the kind field existed, which a
+  // plain { kind: 'user' } filter would silently skip. Recall commands are
+  // questions, never knowledge.
+  const filter = { kind: { $ne: 'ai' as const }, body: { $not: /^@recall / } };
+  const total = await Message.countDocuments(filter);
   console.log(`Backfilling ${total} messages into ${env.QDRANT_COLLECTION}`);
 
   let processed = 0;
   let lastId: string | null = null;
   for (;;) {
     const batch = await Message.find({
-      kind: 'user',
+      ...filter,
       ...(lastId ? { _id: { $gt: lastId } } : {}),
     })
       .sort({ _id: 1 })

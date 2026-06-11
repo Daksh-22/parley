@@ -67,7 +67,16 @@
       "Bash(python3 -)",
       "Bash(pnpm --filter @parley/server exec vitest run tests/ai-answer.test.ts tests/ai-quota.test.ts)",
       "Bash(pnpm --filter @parley/server exec vitest run tests/ai-answer.test.ts)",
-      "Bash(git commit -q -m 'feat: hybrid retrieval and cited streaming answers *)"
+      "Bash(git commit -q -m 'feat: hybrid retrieval and cited streaming answers *)",
+      "Bash(curl -s http://127.0.0.1:6333/healthz)",
+      "Bash(curl -s -f http://127.0.0.1:4000/healthz)",
+      "Bash(curl -s http://127.0.0.1:4000/healthz)",
+      "Bash(pnpm ai:backfill)",
+      "Bash(curl -s -X POST http://127.0.0.1:6333/collections/parley-memory/points/count -H 'Content-Type: application/json' -d '{\"exact\": true}')",
+      "Bash(curl -s -X POST http://127.0.0.1:6333/collections/parley-memory/points/scroll -H 'Content-Type: application/json' -d '{\"limit\": 5, \"with_payload\": [\"text\",\"roomId\",\"kind\"]}')",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(p['payload'].get\\('kind'\\), '|', p['payload'].get\\('roomId',''\\)[:8], '|', p['payload'].get\\('text',''\\)[:60]\\) for p in d['result']['points']]\")",
+      "Bash(curl -s -X DELETE http://127.0.0.1:6333/collections/parley-memory)",
+      "Bash(git commit -q -m 'feat: paper and ink design system with the highlighter signature *)"
     ]
   }
 }

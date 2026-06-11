@@ -14,11 +14,11 @@ function Shell() {
 
   if (status === 'loading') {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-surface-0">
+      <main className="flex min-h-screen items-center justify-center bg-ground">
         <span
           role="status"
           aria-label="Loading"
-          className="h-6 w-6 animate-spin rounded-full border-2 border-border-strong border-t-accent"
+          className="h-6 w-6 animate-spin rounded-full border-2 border-hairline border-t-accent-ink"
         />
       </main>
     );

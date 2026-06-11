@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { SendHorizontal } from 'lucide-react';
 import { sendMessage, notifyTyping, stopTyping } from '../state/chat-store';
 
 const MAX_LENGTH = 2000;
-const MAX_HEIGHT_PX = 160;
+// Six lines of 14px body at 1.55 line height.
+const MAX_HEIGHT_PX = 132;
 
 export function Composer({ roomId, roomName }: { roomId: string; roomName: string }) {
   const [value, setValue] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Reset draft when switching rooms; stop any dangling typing signal.
   useEffect(() => {
     setValue('');
     return () => stopTyping(roomId);
@@ -38,10 +39,12 @@ export function Composer({ roomId, roomName }: { roomId: string; roomName: strin
   }
 
   const remaining = MAX_LENGTH - value.length;
+  const typing = value.length > 0;
 
   return (
-    <div className="border-t border-border-subtle bg-surface-1 px-4 py-3">
-      <div className="flex items-end gap-2 rounded-lg border border-border-subtle bg-surface-0 px-3 py-2 focus-within:border-accent">
+    // Quiet until focused: a hairline top border, no boxed card.
+    <div className="border-t border-hairline px-4 pt-3 pb-2">
+      <div className="flex items-end gap-2">
         <label htmlFor="composer" className="sr-only">
           Message {roomName}
         </label>
@@ -51,7 +54,7 @@ export function Composer({ roomId, roomName }: { roomId: string; roomName: strin
           rows={1}
           value={value}
           maxLength={MAX_LENGTH + 100}
-          placeholder={`Message #${roomName}`}
+          placeholder={`Message #${roomName}, or @recall a question`}
           onChange={(e) => {
             setValue(e.target.value);
             autogrow();
@@ -59,12 +62,12 @@ export function Composer({ roomId, roomName }: { roomId: string; roomName: strin
           }}
           onKeyDown={handleKeyDown}
           onBlur={() => stopTyping(roomId)}
-          className="max-h-40 min-h-[24px] flex-1 resize-none bg-transparent text-sm leading-6 text-text-primary placeholder:text-text-muted focus:outline-none"
+          className="max-h-[132px] min-h-[24px] flex-1 resize-none bg-transparent text-[14px] leading-[1.55] text-text-primary placeholder:text-text-secondary focus:outline-none"
         />
         {remaining < 200 && (
           <span
             aria-live="polite"
-            className={`pb-0.5 font-mono text-[11px] ${remaining < 0 ? 'text-danger' : 'text-text-muted'}`}
+            className={`tabular pb-1 font-mono text-[11px] ${remaining < 0 ? 'text-danger' : 'text-text-secondary'}`}
           >
             {remaining}
           </span>
@@ -72,23 +75,20 @@ export function Composer({ roomId, roomName }: { roomId: string; roomName: strin
         <button
           onClick={submit}
           disabled={!value.trim() || value.length > MAX_LENGTH}
-          aria-label="Send message"
+          aria-label="Send"
           title="Send (Enter)"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-accent transition-colors hover:bg-accent-soft disabled:text-text-muted disabled:hover:bg-transparent"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-text-primary text-ground transition-opacity duration-120 hover:opacity-90 disabled:bg-transparent disabled:text-text-secondary"
         >
-          <svg aria-hidden="true" width="15" height="15" viewBox="0 0 15 15" fill="none">
-            <path
-              d="M13.5 1.5 7 8M13.5 1.5 9.25 13.5l-2.25-5.5L1.5 5.75 13.5 1.5Z"
-              stroke="currentColor"
-              strokeWidth="1.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+          <SendHorizontal size={16} strokeWidth={1.5} aria-hidden="true" />
         </button>
       </div>
-      <p className="mt-1.5 hidden text-[11px] text-text-muted sm:block">
-        Enter to send, Shift+Enter for a new line
+      <p
+        aria-hidden="true"
+        className={`mt-1 hidden font-mono text-[11px] text-text-secondary transition-opacity duration-240 sm:block ${
+          typing ? 'opacity-0' : 'opacity-100'
+        }`}
+      >
+        enter to send, shift+enter for a new line, cmd+k to ask
       </p>
     </div>
   );

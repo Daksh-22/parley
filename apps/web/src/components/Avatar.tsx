@@ -1,8 +1,8 @@
 import { memo } from 'react';
 
 // Deterministic identicon: the avatarSeed assigned at signup hashes to a hue
-// and a symmetric 5x5 pattern, so a user looks the same on every device with
-// zero file uploads.
+// and a symmetric 5x5 pattern. Saturation is kept low so avatars read like
+// ink stamps on paper in both themes, and a user looks identical everywhere.
 
 function fnv1a(input: string): number {
   let hash = 0x811c9dc5;
@@ -16,7 +16,7 @@ function fnv1a(input: string): number {
 export const Avatar = memo(function Avatar({
   seed,
   name,
-  size = 32,
+  size = 28,
   online,
 }: {
   seed: string;
@@ -26,11 +26,10 @@ export const Avatar = memo(function Avatar({
 }) {
   const hash = fnv1a(seed);
   const hue = hash % 360;
-  const bg = `hsl(${hue} 35% 22%)`;
-  const fg = `hsl(${hue} 70% 62%)`;
+  const bg = `hsl(${hue} 22% 84%)`;
+  const fg = `hsl(${hue} 30% 30%)`;
 
   const cells: boolean[] = [];
-  // 3 columns mirrored to 5 for symmetry, 5 rows: 15 bits of the hash.
   for (let i = 0; i < 15; i += 1) cells.push(((hash >> (i % 31)) & 1) === 1);
 
   const rects = [];
@@ -51,7 +50,7 @@ export const Avatar = memo(function Avatar({
         viewBox="0 0 7 7"
         width={size}
         height={size}
-        className="rounded-md"
+        className="rounded-full"
         style={{ backgroundColor: bg }}
       >
         <g fill={fg}>{rects}</g>
@@ -59,8 +58,8 @@ export const Avatar = memo(function Avatar({
       {online !== undefined && (
         <span
           aria-hidden="true"
-          className={`absolute -right-0.5 -bottom-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface-1 ${
-            online ? 'bg-success' : 'bg-text-muted'
+          className={`absolute -right-0.5 -bottom-0.5 h-2 w-2 rounded-full border border-panel ${
+            online ? 'bg-success' : 'bg-text-secondary opacity-50'
           }`}
         />
       )}

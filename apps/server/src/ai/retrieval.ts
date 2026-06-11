@@ -67,10 +67,12 @@ export async function hybridRetrieve(
 
   const ranked = [...fused.values()].sort((a, b) => b.score - a.score);
 
-  // Near-duplicate collapse on normalized text.
+  // Near-duplicate collapse on normalized text. Recall commands indexed by
+  // older builds are filtered here as well: a question is not a source.
   const seen = new Set<string>();
   const deduped: RetrievedSource[] = [];
   for (const source of ranked) {
+    if (source.text.startsWith('@recall ')) continue;
     const normalized = source.text.toLowerCase().replace(/\s+/g, ' ').trim().slice(0, 300);
     if (seen.has(normalized)) continue;
     seen.add(normalized);
@@ -108,7 +110,8 @@ async function lexicalLeg(question: string, roomIds: string[]): Promise<Retrieve
     {
       $text: { $search: question },
       roomId: { $in: roomIds },
-      kind: 'user',
+      // $ne also matches legacy documents that predate the kind field.
+      kind: { $ne: 'ai' },
     },
     { score: { $meta: 'textScore' } },
   )

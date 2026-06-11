@@ -132,9 +132,12 @@ export function registerHandlers(io: AppServer, socket: AppSocket): void {
       // copy arrives via the ack.
       socket.to(roomChannel(payload.roomId)).emit('message:new', wire);
       // Fire-and-forget into the memory pipeline; chat never waits on AI.
-      enqueueMessageEmbed(message._id.toHexString()).catch((err: unknown) => {
-        logger.warn({ err }, 'embed enqueue failed');
-      });
+      // Recall commands are questions, not knowledge: never ingested.
+      if (!payload.body.startsWith('@recall ')) {
+        enqueueMessageEmbed(message._id.toHexString()).catch((err: unknown) => {
+          logger.warn({ err }, 'embed enqueue failed');
+        });
+      }
 
       // "@recall <question>" inside a room triggers a cited answer streamed
       // to the whole room and persisted as an ai message.

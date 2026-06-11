@@ -1,76 +1,65 @@
 @import 'tailwindcss';
 
 /*
- * Parley design tokens.
- * Dark theme first, light theme via the `light` class on <html>.
- * Neutral gray ramp, exactly one accent. 4px spacing scale (Tailwind default).
- * Two font weights per view: 400 and 600.
+ * Parley design tokens. Governed by docs/DESIGN.md.
+ * Paper theme is the default; html.ink switches to the ink theme.
+ * The accent behaves like highlighter ink: a wash over content at memory
+ * moments (citations, citation jumps, unread chips, selection, catch-up),
+ * never a coat of paint on chrome.
  */
 @theme {
-  --font-sans: 'Inter', 'InterVariable', system-ui, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
+  --font-sans: 'Schibsted Grotesk', system-ui, sans-serif;
+  --font-display: 'Newsreader', Georgia, serif;
+  --font-mono: 'Spline Sans Mono', ui-monospace, monospace;
 
-  --color-surface-0: var(--p-surface-0);
-  --color-surface-1: var(--p-surface-1);
-  --color-surface-2: var(--p-surface-2);
-  --color-surface-3: var(--p-surface-3);
-  --color-border-subtle: var(--p-border-subtle);
-  --color-border-strong: var(--p-border-strong);
-  --color-text-primary: var(--p-text-primary);
+  --color-ground: var(--p-ground);
+  --color-panel: var(--p-panel);
+  --color-text-primary: var(--p-text);
   --color-text-secondary: var(--p-text-secondary);
-  --color-text-muted: var(--p-text-muted);
-
-  --color-accent: var(--p-accent);
-  --color-accent-hover: var(--p-accent-hover);
-  --color-accent-soft: var(--p-accent-soft);
-  --color-accent-strong: var(--p-accent-strong);
-  --color-accent-strong-hover: var(--p-accent-strong-hover);
-
-  --color-danger: var(--p-danger);
+  --color-hairline: var(--p-hairline);
+  --color-wash: var(--p-wash);
+  --color-accent-ink: var(--p-accent-ink);
   --color-success: var(--p-success);
+  --color-danger: var(--p-danger);
+  --color-row-hover: var(--p-row-hover);
+
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  --shadow-overlay: var(--p-shadow-overlay);
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 }
 
 :root {
-  /* Dark ramp (default) */
-  --p-surface-0: #0e0f12;
-  --p-surface-1: #16181d;
-  --p-surface-2: #1e2128;
-  --p-surface-3: #262a33;
-  --p-border-subtle: #2c303a;
-  --p-border-strong: #3a4048;
-  --p-text-primary: #e8eaed;
-  --p-text-secondary: #a3a9b3;
-  --p-text-muted: #8b919d;
-  /* accent: text and icons on dark surfaces. accent-strong: filled controls
-     that carry white text. Both hold AA contrast in their role. */
-  --p-accent: #4f8cff;
-  --p-accent-hover: #6b9fff;
-  --p-accent-soft: rgba(79, 140, 255, 0.14);
-  --p-accent-strong: #2563eb;
-  --p-accent-strong-hover: #1d4ed8;
-  --p-danger: #e5484d;
-  --p-success: #46a758;
-  color-scheme: dark;
+  /* Paper */
+  --p-ground: #f4f3ee;
+  --p-panel: #fbfaf7;
+  --p-text: #1f1e1a;
+  --p-text-secondary: #6b6960;
+  --p-hairline: rgba(31, 30, 26, 0.12);
+  --p-wash: #ffdf8e;
+  --p-accent-ink: #7a5800;
+  --p-success: #3e6b43;
+  --p-danger: #9c3d33;
+  --p-row-hover: rgba(31, 30, 26, 0.03);
+  --p-shadow-overlay: 0 4px 24px rgba(31, 30, 26, 0.14);
+  color-scheme: light;
 }
 
-html.light {
-  --p-surface-0: #ffffff;
-  --p-surface-1: #f7f8f9;
-  --p-surface-2: #eff1f3;
-  --p-surface-3: #e6e9ec;
-  --p-border-subtle: #dde0e4;
-  --p-border-strong: #c5cad1;
-  --p-text-primary: #1a1d21;
-  --p-text-secondary: #4b5158;
-  --p-text-muted: #6b7178;
-  --p-accent: #2563eb;
-  --p-accent-hover: #1d4ed8;
-  --p-accent-soft: rgba(37, 99, 235, 0.1);
-  --p-accent-strong: #2563eb;
-  --p-accent-strong-hover: #1d4ed8;
-  --p-danger: #d92d20;
-  --p-success: #15803d;
-  color-scheme: light;
+html.ink {
+  --p-ground: #14130f;
+  --p-panel: #1c1b16;
+  --p-text: #eceae2;
+  --p-text-secondary: #a09d92;
+  --p-hairline: rgba(236, 234, 226, 0.1);
+  --p-wash: rgba(255, 214, 107, 0.16);
+  --p-accent-ink: #e9c46a;
+  --p-success: #93bc93;
+  --p-danger: #dc9286;
+  --p-row-hover: rgba(236, 234, 226, 0.04);
+  --p-shadow-overlay: 0 4px 24px rgba(0, 0, 0, 0.55);
+  color-scheme: dark;
 }
 
 html,
@@ -80,17 +69,89 @@ body,
 }
 
 body {
-  background-color: var(--p-surface-0);
-  color: var(--p-text-primary);
+  background-color: var(--p-ground);
+  color: var(--p-text);
   font-family: var(--font-sans);
+  font-size: 14px;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* Visible focus for keyboard users, on every interactive element. */
+/* Signature wash, place four of five: text selection. */
+::selection {
+  background-color: var(--p-wash);
+  color: var(--p-text);
+}
+
+/* Visible focus on every interactive element, in accent ink. */
 :focus-visible {
-  outline: 2px solid var(--p-accent);
+  outline: 2px solid var(--p-accent-ink);
   outline-offset: 2px;
+}
+
+/* Numbers align wherever they sit. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Section eyebrows: mono caps, letter-spaced. */
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--p-text-secondary);
+}
+
+/* The signature: citation jump sweep. A wash sweeps the row left to right
+   in 240ms, fades over 1.4s, and a hairline accent left rule persists. */
+@keyframes citation-sweep {
+  0% {
+    background-size: 0% 100%;
+    background-color: transparent;
+  }
+  17% {
+    background-size: 100% 100%;
+  }
+  100% {
+    background-size: 100% 100%;
+    background-color: transparent;
+  }
+}
+
+.citation-target {
+  background-image: linear-gradient(to right, var(--p-wash), var(--p-wash));
+  background-repeat: no-repeat;
+  animation: citation-sweep 1.64s var(--ease-standard) forwards;
+  box-shadow: inset 2px 0 0 var(--p-accent-ink);
+  transition: box-shadow 240ms var(--ease-standard) 3s;
+}
+
+.citation-target.settled {
+  box-shadow: inset 0 0 0 transparent;
+}
+
+/* Streaming caret on AI answers: quiet, no layout impact. */
+@keyframes caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.2;
+  }
+}
+
+.stream-caret::after {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background-color: var(--p-accent-ink);
+  animation: caret-blink 1s steps(1) infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -101,10 +162,14 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+  .citation-target {
+    animation: none;
+    background-image: none;
+    background-color: var(--p-wash);
+  }
 }
 
-/* Subtle scrollbars that match the theme. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--p-border-strong) transparent;
+  scrollbar-color: var(--p-hairline) transparent;
 }

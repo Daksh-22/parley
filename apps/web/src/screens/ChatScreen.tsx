@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Menu } from 'lucide-react';
 import { useChatState } from '../state/use-chat';
 import { getState, openRoom, toggleSidebar } from '../state/chat-store';
 import { Sidebar } from '../components/Sidebar';
@@ -10,32 +11,11 @@ import { ConnectionToast } from '../components/ConnectionToast';
 function NoRoomSelected() {
   return (
     <div className="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
-      <svg aria-hidden="true" width="48" height="48" viewBox="0 0 48 48" fill="none">
-        <rect
-          x="6"
-          y="10"
-          width="36"
-          height="26"
-          rx="6"
-          stroke="var(--p-border-strong)"
-          strokeWidth="2"
-        />
-        <path
-          d="M17 38l5-5"
-          stroke="var(--p-border-strong)"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-        <path
-          d="M15 20h18M15 26h10"
-          stroke="var(--p-text-muted)"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-      </svg>
-      <p className="text-sm font-semibold text-text-primary">Pick a room to start talking</p>
-      <p className="max-w-xs text-sm text-text-secondary">
-        Choose a room from the sidebar, or create a new one with the plus button.
+      <p className="font-display text-2xl font-medium text-text-primary">
+        An archive you can question
+      </p>
+      <p className="max-w-sm text-[13px] text-text-secondary">
+        Pick a room from the sidebar, or create one with the plus button.
       </p>
     </div>
   );
@@ -51,27 +31,22 @@ function RoomView({ roomId }: { roomId: string }) {
 
   return (
     <div className="flex h-full min-w-0 flex-col">
-      <header className="flex h-12 shrink-0 items-center gap-2 border-b border-border-subtle px-4">
+      <header className="flex h-12 shrink-0 items-center gap-2 border-b border-hairline px-4">
         <button
           onClick={() => toggleSidebar(true)}
           aria-label="Open room list"
-          className="-ml-1 flex h-7 w-7 items-center justify-center rounded text-text-secondary hover:bg-surface-2 hover:text-text-primary md:hidden"
+          className="-ml-1 flex h-7 w-7 items-center justify-center rounded-md text-text-secondary hover:bg-row-hover hover:text-text-primary md:hidden"
         >
-          <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path
-              d="M2 4h12M2 8h12M2 12h12"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
+          <Menu size={16} strokeWidth={1.5} aria-hidden="true" />
         </button>
-        <span aria-hidden="true" className="font-mono text-text-muted">
+        <span aria-hidden="true" className="font-mono text-text-secondary">
           #
         </span>
-        <h2 className="min-w-0 truncate text-sm font-semibold text-text-primary">{room.name}</h2>
+        <h2 className="min-w-0 truncate text-[13px] font-semibold text-text-primary">
+          {room.name}
+        </h2>
         {members && members.size > 0 && (
-          <p className="ml-auto shrink-0 text-xs text-text-muted">
+          <p className="tabular ml-auto shrink-0 font-mono text-[11px] text-text-secondary">
             {members.size} {members.size === 1 ? 'member' : 'members'}
             {onlineCount > 0 && (
               <span className="ml-2 inline-flex items-center gap-1">
@@ -115,21 +90,19 @@ export function ChatScreen() {
   }, [sidebarOpen]);
 
   return (
-    <div className="flex h-full bg-surface-0">
-      {/* Static sidebar on md and up */}
-      <aside className="hidden w-60 shrink-0 border-r border-border-subtle md:block">
+    <div className="flex h-full bg-ground">
+      <aside className="hidden shrink-0 border-r border-hairline md:block">
         <Sidebar />
       </aside>
 
-      {/* Slide-over sidebar on mobile */}
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
           <button
             aria-label="Close room list"
             onClick={() => toggleSidebar(false)}
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-text-primary/20"
           />
-          <aside className="absolute inset-y-0 left-0 w-64 border-r border-border-subtle shadow-xl">
+          <aside className="absolute inset-y-0 left-0 border-r border-hairline bg-ground shadow-overlay">
             <Sidebar />
           </aside>
         </div>

@@ -1,6 +1,7 @@
 import { io, type Socket } from 'socket.io-client';
 import type {
   Ack,
+  Citation,
   ClientToServerEvents,
   MessageWire,
   PublicUser,
@@ -35,6 +36,26 @@ export interface RoomState {
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'offline';
 
+export interface AiStream {
+  streamId: string;
+  scope: 'room' | 'global' | 'catchup';
+  roomId?: string;
+  question: string;
+  askedBy: string;
+  text: string;
+  status: 'streaming' | 'done' | 'error';
+  errorMessage?: string;
+  citations?: Citation[];
+  cached?: boolean;
+}
+
+export interface JumpTarget {
+  roomId: string;
+  messageId: string;
+  // Changes on every jump so repeating the same target still re-triggers.
+  nonce: number;
+}
+
 export interface ChatState {
   connection: ConnectionStatus;
   rooms: Map<string, RoomState>;
@@ -42,6 +63,10 @@ export interface ChatState {
   activeRoomId: string | null;
   online: Set<string>;
   sidebarOpen: boolean;
+  // Live AI answer streams keyed by streamId. Room streams render in the
+  // message list; global and catchup streams render where they were asked.
+  aiStreams: Map<string, AiStream>;
+  jumpTarget: JumpTarget | null;
 }
 
 type AppSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
@@ -58,6 +83,8 @@ let state: ChatState = {
   activeRoomId: null,
   online: new Set(),
   sidebarOpen: false,
+  aiStreams: new Map(),
+  jumpTarget: null,
 };
 
 const listeners = new Set<() => void>();
@@ -187,7 +214,111 @@ export function connect(currentUser: PublicUser): void {
     emitChange();
   });
 
+  socket.on('ai:stream:start', (event) => {
+    state.aiStreams = new Map(state.aiStreams).set(event.streamId, {
+      streamId: event.streamId,
+      scope: event.scope,
+      roomId: event.roomId,
+      question: event.question,
+      askedBy: event.askedBy,
+      text: '',
+      status: 'streaming',
+    });
+    emitChange();
+  });
+
+  socket.on('ai:stream:delta', ({ streamId, delta }) => {
+    const stream = state.aiStreams.get(streamId);
+    if (!stream) return;
+    state.aiStreams = new Map(state.aiStreams).set(streamId, {
+      ...stream,
+      text: stream.text + delta,
+    });
+    emitChange();
+  });
+
+  socket.on('ai:stream:done', (event) => {
+    const stream = state.aiStreams.get(event.streamId);
+    if (!stream) return;
+    const next = new Map(state.aiStreams);
+    if (stream.scope === 'room' && event.messageId) {
+      // The persisted ai message arrives via message:new; the ephemeral
+      // stream row simply leaves.
+      next.delete(event.streamId);
+    } else {
+      next.set(event.streamId, {
+        ...stream,
+        text: event.answer,
+        citations: event.citations,
+        cached: event.cached,
+        status: 'done',
+      });
+    }
+    state.aiStreams = next;
+    emitChange();
+  });
+
+  socket.on('ai:stream:error', (event) => {
+    const stream = state.aiStreams.get(event.streamId);
+    const next = new Map(state.aiStreams);
+    next.set(event.streamId, {
+      streamId: event.streamId,
+      scope: stream?.scope ?? 'room',
+      roomId: stream?.roomId,
+      question: stream?.question ?? '',
+      askedBy: stream?.askedBy ?? '',
+      text: stream?.text ?? '',
+      status: 'error',
+      errorMessage: event.message,
+    });
+    state.aiStreams = next;
+    emitChange();
+  });
+
   void loadRooms();
+}
+
+export function dismissAiStream(streamId: string): void {
+  if (!state.aiStreams.has(streamId)) return;
+  const next = new Map(state.aiStreams);
+  next.delete(streamId);
+  state.aiStreams = next;
+  emitChange();
+}
+
+/**
+ * The signature interaction: jump to a citation's source message. Opens the
+ * room if needed; if the source sits outside the loaded window, history pages
+ * are fetched around it until it appears (bounded), then the list scrolls and
+ * runs the highlight sweep via jumpTarget.
+ */
+export async function jumpToCitation(citation: {
+  kind: 'message' | 'doc';
+  roomId: string;
+  messageId?: string;
+}): Promise<void> {
+  if (citation.kind !== 'message' || !citation.messageId) return;
+  const { roomId, messageId } = citation;
+  if (state.activeRoomId !== roomId) await openRoom(roomId);
+  const r = room(roomId);
+  if (!r) return;
+
+  // Fetch around: page back through history until the source is loaded.
+  let pages = 0;
+  while (!r.messages.some((m) => m.id === messageId) && r.nextCursor !== null && pages < 30) {
+    await loadOlderMessages(roomId);
+    pages += 1;
+  }
+  if (!r.messages.some((m) => m.id === messageId)) return;
+
+  state.jumpTarget = { roomId, messageId, nonce: Date.now() };
+  emitChange();
+}
+
+export function clearJumpTarget(): void {
+  if (!state.jumpTarget) return;
+  state.jumpTarget = null;
+  emitChange();
 }
 
 export function disconnect(): void {
@@ -201,6 +332,8 @@ export function disconnect(): void {
     activeRoomId: null,
     online: new Set(),
     sidebarOpen: false,
+    aiStreams: new Map(),
+    jumpTarget: null,
   };
   emitChange();
 }

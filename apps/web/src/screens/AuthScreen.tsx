@@ -65,23 +65,27 @@ export function AuthScreen() {
   }
 
   const inputClass =
-    'w-full rounded-md border border-border-subtle bg-surface-0 px-3 py-2 text-sm ' +
-    'text-text-primary placeholder:text-text-muted ' +
-    'focus:border-accent focus:outline-none focus-visible:outline-2';
+    'w-full rounded-md border border-hairline bg-ground px-3 py-2 text-[14px] ' +
+    'text-text-primary placeholder:text-text-secondary ' +
+    'focus:border-accent-ink focus:outline-none';
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-surface-0 px-4">
+    <main className="flex min-h-screen items-center justify-center bg-ground px-4">
       <div className="w-full max-w-sm">
         <header className="mb-8 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Parley</h1>
-          <p className="mt-1 text-sm text-text-secondary">Fast, focused team chat</p>
+          <h1 className="font-display text-[32px] font-medium tracking-tight text-text-primary">
+            Parley
+          </h1>
+          <p className="mt-1 text-[13px] text-text-secondary">
+            Chat apps store messages. Parley remembers them.
+          </p>
         </header>
 
-        <div className="rounded-lg border border-border-subtle bg-surface-1 p-6">
+        <div className="rounded-md border border-hairline bg-panel p-6">
           <div
             role="tablist"
             aria-label="Sign in or create account"
-            className="mb-6 grid grid-cols-2 gap-1 rounded-md bg-surface-2 p-1"
+            className="mb-6 flex gap-4 border-b border-hairline"
           >
             {(['login', 'register'] as const).map((m) => (
               <button
@@ -89,10 +93,10 @@ export function AuthScreen() {
                 role="tab"
                 aria-selected={mode === m}
                 onClick={() => switchMode(m)}
-                className={`rounded px-3 py-1.5 text-sm transition-colors ${
+                className={`-mb-px border-b-2 pb-2 text-[13px] transition-colors duration-120 ${
                   mode === m
-                    ? 'bg-surface-0 font-semibold text-text-primary'
-                    : 'text-text-secondary hover:text-text-primary'
+                    ? 'border-accent-ink font-semibold text-text-primary'
+                    : 'border-transparent text-text-secondary hover:text-text-primary'
                 }`}
               >
                 {m === 'login' ? 'Sign in' : 'Create account'}
@@ -103,7 +107,7 @@ export function AuthScreen() {
           <form onSubmit={(e) => void handleSubmit(e)} noValidate>
             <div className="space-y-4">
               <div>
-                <label htmlFor="username" className="mb-1 block text-sm text-text-secondary">
+                <label htmlFor="username" className="mb-1 block text-[13px] text-text-secondary">
                   Username
                 </label>
                 <input
@@ -117,7 +121,7 @@ export function AuthScreen() {
                   aria-describedby={fieldErrors.username ? 'username-error' : undefined}
                 />
                 {fieldErrors.username && (
-                  <p id="username-error" className="mt-1 text-xs text-danger">
+                  <p id="username-error" className="mt-1 text-[12px] text-danger">
                     {fieldErrors.username}
                   </p>
                 )}
@@ -125,7 +129,10 @@ export function AuthScreen() {
 
               {mode === 'register' && (
                 <div>
-                  <label htmlFor="displayName" className="mb-1 block text-sm text-text-secondary">
+                  <label
+                    htmlFor="displayName"
+                    className="mb-1 block text-[13px] text-text-secondary"
+                  >
                     Display name
                   </label>
                   <input
@@ -139,7 +146,7 @@ export function AuthScreen() {
                     aria-describedby={fieldErrors.displayName ? 'displayName-error' : undefined}
                   />
                   {fieldErrors.displayName && (
-                    <p id="displayName-error" className="mt-1 text-xs text-danger">
+                    <p id="displayName-error" className="mt-1 text-[12px] text-danger">
                       {fieldErrors.displayName}
                     </p>
                   )}
@@ -147,7 +154,7 @@ export function AuthScreen() {
               )}
 
               <div>
-                <label htmlFor="password" className="mb-1 block text-sm text-text-secondary">
+                <label htmlFor="password" className="mb-1 block text-[13px] text-text-secondary">
                   Password
                 </label>
                 <input
@@ -162,7 +169,7 @@ export function AuthScreen() {
                   aria-describedby={fieldErrors.password ? 'password-error' : undefined}
                 />
                 {fieldErrors.password && (
-                  <p id="password-error" className="mt-1 text-xs text-danger">
+                  <p id="password-error" className="mt-1 text-[12px] text-danger">
                     {fieldErrors.password}
                   </p>
                 )}
@@ -170,10 +177,7 @@ export function AuthScreen() {
             </div>
 
             {serverError && (
-              <p
-                role="alert"
-                className="mt-4 rounded-md bg-danger/10 px-3 py-2 text-sm text-danger"
-              >
+              <p role="alert" className="mt-4 text-[13px] text-danger">
                 {serverError}
               </p>
             )}
@@ -181,13 +185,13 @@ export function AuthScreen() {
             <button
               type="submit"
               disabled={submitting}
-              className="mt-6 flex w-full items-center justify-center rounded-md bg-accent-strong px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-strong-hover disabled:opacity-60"
+              className="mt-6 flex w-full items-center justify-center rounded-md bg-text-primary px-3 py-2 text-[13px] font-semibold text-ground transition-opacity duration-120 hover:opacity-90 disabled:opacity-60"
             >
               {submitting ? (
                 <span className="inline-flex items-center gap-2">
                   <span
                     aria-hidden="true"
-                    className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white"
+                    className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-ground/40 border-t-ground"
                   />
                   {mode === 'login' ? 'Signing in' : 'Creating account'}
                 </span>
@@ -200,13 +204,13 @@ export function AuthScreen() {
           </form>
         </div>
 
-        <p className="mt-4 text-center text-xs text-text-muted">
+        <p className="mt-4 text-center text-[12px] text-text-secondary">
           {mode === 'login' ? (
             <>
               New here?{' '}
               <button
                 onClick={() => switchMode('register')}
-                className="text-accent hover:underline"
+                className="text-accent-ink hover:underline"
               >
                 Create an account
               </button>
@@ -214,7 +218,10 @@ export function AuthScreen() {
           ) : (
             <>
               Already have an account?{' '}
-              <button onClick={() => switchMode('login')} className="text-accent hover:underline">
+              <button
+                onClick={() => switchMode('login')}
+                className="text-accent-ink hover:underline"
+              >
                 Sign in
               </button>
             </>

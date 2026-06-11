@@ -20,14 +20,14 @@ export function TypingRow({ roomId }: { roomId: string }) {
   return (
     <div
       aria-live="polite"
-      className="flex h-6 items-center gap-1.5 px-4 text-xs text-text-secondary"
+      className="flex h-6 items-center gap-1.5 px-4 text-[12px] text-text-secondary"
     >
       {label && (
         <>
           <span aria-hidden="true" className="inline-flex gap-0.5">
-            <span className="h-1 w-1 animate-bounce rounded-full bg-text-muted [animation-delay:0ms]" />
-            <span className="h-1 w-1 animate-bounce rounded-full bg-text-muted [animation-delay:120ms]" />
-            <span className="h-1 w-1 animate-bounce rounded-full bg-text-muted [animation-delay:240ms]" />
+            <span className="h-1 w-1 animate-bounce rounded-full bg-text-secondary [animation-delay:0ms]" />
+            <span className="h-1 w-1 animate-bounce rounded-full bg-text-secondary [animation-delay:120ms]" />
+            <span className="h-1 w-1 animate-bounce rounded-full bg-text-secondary [animation-delay:240ms]" />
           </span>
           {label}
         </>

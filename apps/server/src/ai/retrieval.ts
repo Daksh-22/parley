@@ -1,7 +1,7 @@
 import { Membership } from '../models/membership.model.js';
 import { Message } from '../models/message.model.js';
 import { env } from '../config/env.js';
-import { getEmbedder } from './provider.js';
+import { getEmbedder, getLLM } from './provider.js';
 import { searchVectors } from './vector-store.js';
 import { approxTokens } from './tokens.js';
 import { filterAiEnabledRooms } from './room-gate.js';
@@ -129,6 +129,32 @@ async function lexicalLeg(question: string, roomIds: string[]): Promise<Retrieve
     messageId: message._id.toHexString(),
     senderId: message.senderId.toHexString(),
   }));
+}
+
+/**
+ * LLM rerank stage: reorders fused candidates by modeled relevance and keeps
+ * the top K. Used when RERANK_ENABLED is set and by the eval comparison.
+ * Falls back to the incoming order on any provider failure.
+ */
+export async function rerankSources(
+  question: string,
+  sources: RetrievedSource[],
+  topK = 6,
+): Promise<RetrievedSource[]> {
+  if (sources.length <= topK) return sources;
+  try {
+    const order = await getLLM().rerank(
+      question,
+      sources.map((s) => s.text),
+      topK,
+    );
+    const reranked = order
+      .map((index) => sources[index])
+      .filter((s): s is RetrievedSource => s !== undefined);
+    return reranked.length > 0 ? reranked : sources.slice(0, topK);
+  } catch {
+    return sources.slice(0, topK);
+  }
 }
 
 /** Pack the strongest sources into the context token budget, in rank order. */

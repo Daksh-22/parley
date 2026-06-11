@@ -1,0 +1,132 @@
+{
+  "description": "Golden retrieval set over the pnpm seed:demo workspace. Each item names the room and a stable substring of the message (or pdf chunk) that answers the question; the eval runner resolves anchors to live ids at run time.",
+  "items": [
+    {
+      "question": "What did we decide about the launch date?",
+      "expect": [
+        { "room": "launch-week", "contains": "moving the launch from Tuesday to Thursday" }
+      ]
+    },
+    {
+      "question": "Why was the launch moved to Thursday?",
+      "expect": [{ "room": "launch-week", "contains": "land together instead of dribbling out" }]
+    },
+    {
+      "question": "What is the team plan pricing?",
+      "expect": [{ "room": "launch-week", "contains": "12 dollars per seat per month" }]
+    },
+    {
+      "question": "Is billing annual or monthly at launch?",
+      "expect": [{ "room": "launch-week", "contains": "annual billing only at launch" }]
+    },
+    {
+      "question": "Who owns the pricing page copy?",
+      "expect": [{ "room": "launch-week", "contains": "Mira owns the pricing page copy" }]
+    },
+    {
+      "question": "Who is responsible for the changelog?",
+      "expect": [{ "room": "launch-week", "contains": "I own the changelog" }]
+    },
+    {
+      "question": "When is the deadline for the launch workstreams?",
+      "expect": [{ "room": "launch-week", "contains": "Deadline for all three: Wednesday noon" }]
+    },
+    {
+      "question": "What has to finish before pricing goes live?",
+      "expect": [{ "room": "launch-week", "contains": "billing migration has to finish" }]
+    },
+    {
+      "question": "How long does the rollback take?",
+      "expect": [{ "room": "launch-week", "contains": "Rollback takes 4 minutes" }]
+    },
+    {
+      "question": "How many changelog entries are there?",
+      "expect": [{ "room": "launch-week", "contains": "41 entries" }]
+    },
+    {
+      "question": "What is the status of the demo video?",
+      "expect": [{ "room": "launch-week", "contains": "Demo video uploaded" }]
+    },
+    {
+      "question": "What is the launch success metric?",
+      "expect": [{ "room": "launch-week", "kind": "doc", "contains": "200 team plan signups" }]
+    },
+    {
+      "question": "What is the guardrail on embedding costs?",
+      "expect": [{ "room": "launch-week", "contains": "under 4 percent of revenue" }]
+    },
+    {
+      "question": "What date does the launch plan pdf give?",
+      "expect": [{ "room": "launch-week", "kind": "doc", "contains": "Thursday the 18th" }]
+    },
+    {
+      "question": "Which theme ships as the default?",
+      "expect": [{ "room": "design-crit", "contains": "paper ships as the default" }]
+    },
+    {
+      "question": "Why does paper work better as the default?",
+      "expect": [{ "room": "design-crit", "contains": "photographs better" }]
+    },
+    {
+      "question": "What are the empty state guidelines?",
+      "expect": [{ "room": "design-crit", "contains": "short headline, one sentence of direction" }]
+    },
+    {
+      "question": "What was wrong with the empty state headline?",
+      "expect": [{ "room": "design-crit", "contains": "reads like an apology" }]
+    },
+    {
+      "question": "How is reduced motion handled?",
+      "expect": [{ "room": "design-crit", "contains": "survives reduced-motion" }]
+    },
+    {
+      "question": "How was the unread chip contrast fixed?",
+      "expect": [{ "room": "design-crit", "contains": "Bumped the wash alpha" }]
+    },
+    {
+      "question": "What was the design crit about?",
+      "expect": [{ "room": "design-crit", "contains": "onboarding flow" }]
+    },
+    {
+      "question": "Where did the suggested questions idea come from?",
+      "expect": [{ "room": "design-crit", "contains": "three suggested questions" }]
+    },
+    {
+      "question": "What caused the checkout outage?",
+      "expect": [{ "room": "ops-incidents", "contains": "connection pool exhaustion" }]
+    },
+    {
+      "question": "How long was checkout down?",
+      "expect": [{ "room": "ops-incidents", "contains": "down 22 minutes" }]
+    },
+    {
+      "question": "What was the contributing factor to the retry storm?",
+      "expect": [{ "room": "ops-incidents", "contains": "no backoff jitter" }]
+    },
+    {
+      "question": "How many checkouts failed during the incident?",
+      "expect": [{ "room": "ops-incidents", "contains": "1,830 failed checkouts" }]
+    },
+    {
+      "question": "What did the postmortem decide?",
+      "expect": [
+        {
+          "room": "ops-incidents",
+          "contains": "every external service call gets a circuit breaker"
+        }
+      ]
+    },
+    {
+      "question": "Who owns the circuit breaker rollout?",
+      "expect": [{ "room": "ops-incidents", "contains": "tracked in OPS-512" }]
+    },
+    {
+      "question": "How far along is the breaker rollout?",
+      "expect": [{ "room": "ops-incidents", "contains": "6 of 11 services" }]
+    },
+    {
+      "question": "Were there any double charges during the outage?",
+      "expect": [{ "room": "ops-incidents", "contains": "no double charges confirmed" }]
+    }
+  ]
+}

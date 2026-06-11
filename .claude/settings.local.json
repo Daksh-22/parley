@@ -78,7 +78,15 @@
       "Bash(curl -s -X DELETE http://127.0.0.1:6333/collections/parley-memory)",
       "Bash(git commit -q -m 'feat: paper and ink design system with the highlighter signature *)",
       "Bash(pnpm --filter @parley/server exec vitest run tests/ai-surfaces.test.ts)",
-      "Bash(git commit -q -m 'feat: product surfaces over the memory engine *)"
+      "Bash(git commit -q -m 'feat: product surfaces over the memory engine *)",
+      "Bash(pnpm exec tsx -e ' *)",
+      "Bash(pnpm exec *)",
+      "Bash(pnpm seed:demo)",
+      "Bash(pnpm ai:eval --compare)",
+      "Bash(grep -vE \"INFO|service|^>|^$\")",
+      "Bash(grep -vE \"INFO|service|^>|^$|uri\")",
+      "Bash(pnpm ai:metrics)",
+      "Bash(git commit -q -m 'feat: golden-set evals and AI call metrics *)"
     ]
   }
 }

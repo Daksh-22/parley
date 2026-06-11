@@ -17,7 +17,9 @@
     "test": "pnpm -r test",
     "ai:backfill": "pnpm --filter @parley/server ai:backfill",
     "seed:demo": "pnpm --filter @parley/server seed:demo",
-    "ai:export-feedback": "pnpm --filter @parley/server ai:export-feedback"
+    "ai:export-feedback": "pnpm --filter @parley/server ai:export-feedback",
+    "ai:eval": "pnpm --filter @parley/server ai:eval",
+    "ai:metrics": "pnpm --filter @parley/server ai:metrics"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",

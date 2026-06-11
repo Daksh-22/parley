@@ -1,5 +1,6 @@
 {
   "buildCommand": "pnpm --filter @parley/web build",
-  "installCommand": "pnpm install",
-  "outputDirectory": "apps/web/dist"
+  "installCommand": "pnpm install --frozen-lockfile",
+  "outputDirectory": "apps/web/dist",
+  "nodeVersion": "20.x"
 }

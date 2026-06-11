@@ -3,7 +3,7 @@
   "build": {
     "builder": "dockerfile",
     "context": ".",
-    "dockerfile": "apps/server/Dockerfile"
+    "dockerfilePath": "apps/server/Dockerfile"
   },
   "deploy": {
     "startCommand": "node dist/index.js",

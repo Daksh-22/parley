@@ -4,14 +4,6 @@
 
 Parley is a realtime team messenger whose memory is the product: everything your team has ever said or shared becomes a permission-aware knowledge base that answers questions with citations you can click.
 
-<!-- demo gif placeholder: record the Catch me up moment.
-     1. pnpm seed:demo, sign in as demo / demo-password-1
-     2. open #launch-week, click the "Catch me up · 11 unread" pill
-     3. click a citation chip and let the highlight sweep land
-     Record with cmd+shift+5, convert to gif, save as docs/demo.gif,
-     then replace this comment with: ![Catch me up demo](docs/demo.gif) -->
-
-> Demo GIF pending. Recording steps are in the comment above.
 
 ## The problem
 
@@ -95,6 +87,32 @@ cp .env.example .env && pnpm seed:demo && pnpm dev
 ```
 
 Open http://localhost:5173, sign in as `demo / demo-password-1`, open `#launch-week`, and click the Catch me up pill. Ask the suggested questions with cmd+k; click any citation and watch the jump. The default config uses the deterministic mock provider, no keys needed. Real providers: set `AI_CHAT_PROVIDER=anthropic` with `ANTHROPIC_API_KEY`, or `openai` for both chat and embeddings.
+
+## Deployment
+
+For a live deployment on Netlify (frontend) + Railway (backend) + managed databases:
+see [DEPLOYMENT.md](DEPLOYMENT.md). It documents the exact Netlify/Railway/MongoDB Atlas
+wiring, common gotchas, and health checks.
+
+## Data Analytics
+
+A separate Python/Spark/Snowflake analytics pipeline reads from the same MongoDB,
+answering questions about AI token spend, answer quality, room engagement, and user cohorts.
+See [data-pipeline/README.md](data-pipeline/README.md).
+
+## Project Structure
+
+```
+apps/
+  server/           Node.js + Express. API, websocket, AI layer, ingest worker.
+  web/              React + Vite. Single-page app, compiled to static HTML/JS.
+  mcp/              Model Context Protocol server for Claude Desktop / Cursor.
+packages/
+  shared/           TypeScript types, schemas, constants. Monorepo-wide.
+data-pipeline/      Python ETL → Spark transform → Snowflake/DuckDB warehouse.
+docs/               Architecture, design, evals, load test, product specs.
+infra/              Load test, chaos test, lighthouse audit, nginx config.
+```
 
 ## Use your team's memory from Claude Desktop or Cursor
 

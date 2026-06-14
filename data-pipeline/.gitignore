@@ -1,0 +1,16 @@
+# Local secrets and lakehouse artifacts — never commit these.
+.env
+data/
+*.duckdb
+*.duckdb.wal
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Project-local JDK 17 for Spark (machine-specific, ~300MB). Recreate with `make jdk`.
+.jdk17/

@@ -1,0 +1,34 @@
+# Optional standalone Spark cluster for the "big data" path.
+#
+# The transform runs in local[*] mode by default and needs none of this. Use
+# this only to demonstrate distributed execution against a real master:
+#
+#   docker compose -f docker-compose.spark.yml up -d
+#   SPARK_MASTER=spark://localhost:7077 python pipeline.py --steps transform
+#
+# The Spark UI is at http://localhost:8080 (master) and :8081 (worker).
+
+services:
+  spark-master:
+    image: bitnami/spark:3.5.3
+    environment:
+      - SPARK_MODE=master
+    ports:
+      - '7077:7077' # cluster submit port
+      - '8080:8080' # master web UI
+    volumes:
+      - ./data:/opt/parley/data # share the lakehouse with the host
+
+  spark-worker:
+    image: bitnami/spark:3.5.3
+    depends_on:
+      - spark-master
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=2
+    ports:
+      - '8081:8081' # worker web UI
+    volumes:
+      - ./data:/opt/parley/data
